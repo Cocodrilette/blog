@@ -1,16 +1,11 @@
-import styles from "../../styles/Text.module.css";
+import { ComponentWithContent } from "@app/types/components/index";
 
-export interface PageTitleProps {
-  content: string;
-}
-
-export default function PageTitle({ content }: PageTitleProps) {
+export default function PageTitle({ content }: ComponentWithContent) {
   return (
-    <h1
-      id={styles.pageTitle}
-      className="md:text-3xl text-xl italic drop-shadow-xl"
-    >
+    <h1 className="md:text-3xl text-xl drop-shadow-xl">
+      <span className="text-dimmedPink">_</span>
       {content}
+      <span className="text-dimmedPink">_</span>
     </h1>
   );
 }

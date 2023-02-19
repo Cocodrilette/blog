@@ -1,6 +1,6 @@
 import PageTitle from "@app/components/text/MainPageTitle";
-import Layout from "../components/Layout";
-import Container5xl from "@app/components/Container5xl";
+import Layout from "@app/components/Layout";
+import Container5xl from "@app/components/commons/Container5xl";
 
 export default function Home() {
   return (
@@ -9,7 +9,7 @@ export default function Home() {
       headDescription="A space dedicated to talk about blockchain, law and whatever I want."
     >
       <Container5xl>
-        <PageTitle content="> Home" />
+        <PageTitle content="Home" />
       </Container5xl>
     </Layout>
   );
