@@ -7,7 +7,6 @@ const baseUrl = "blog/";
 
 export default function ArticleCard({
   description,
-  key,
   publishedAt,
   readingTime,
   tags,
@@ -15,7 +14,7 @@ export default function ArticleCard({
   slug,
 }: BlogPostProps) {
   return (
-    <div key={key} className="flex flex-col gap-4 mb-7">
+    <div className="flex flex-col gap-4 mb-7">
       <div className="flex flex-col gap-2">
         <Link href={baseUrl + slug}>
           <h1 className="md:text-2xl text-xl font-bold ">{title}</h1>

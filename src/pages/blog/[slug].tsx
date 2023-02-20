@@ -31,7 +31,7 @@ export default function Blog({ article: { source, frontmatter } }: any) {
               {dayjs(frontmatter.publishedAt).format("MMMM D, YYYY")}
             </TextSmallAndDimmed>
           </div>
-          <div className="text-slate-200 my-5 border-b-2 pb-5 border-beige">
+          <div className="text-slate-200 my-5 border-b-2 pb-5 border-dimmedPink">
             <p className="italic">{frontmatter.description}</p>
           </div>
           <div

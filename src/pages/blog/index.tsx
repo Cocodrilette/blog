@@ -6,7 +6,6 @@ import ArticleCard from "@app/components/blog/ArticleCard";
 
 export default function PostsPages(props: any) {
   const articles = props.allArticles
-    .reverse()
     .map((frontmatter: any, index: number) => {
       return (
         <ArticleCard
@@ -19,7 +18,8 @@ export default function PostsPages(props: any) {
           tags={frontmatter.tags}
         />
       );
-    });
+    })
+    .reverse();
 
   return (
     <Layout

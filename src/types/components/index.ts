@@ -28,7 +28,6 @@ export interface BlogIndexProps {
 }
 
 export interface BlogPostProps {
-  key: number;
   title: string;
   description: string;
   publishedAt: string;
