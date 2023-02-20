@@ -1,14 +1,15 @@
 import Head from "next/head";
-import { IBM_Plex_Sans } from "@next/font/google";
+import { Quicksand } from "@next/font/google";
 
 import Footer from "@app/components/commons/Footer";
 import Nav from "@app/components/commons/Nav";
 import { LayoutProps } from "@app/types/components";
 
-const ibmPlexSans = IBM_Plex_Sans({
-  weight: ["100", "200", "300", "400", "500", "600", "700"],
-  style: ["italic", "normal"],
-  subsets: [],
+const quicksand = Quicksand({
+  weight: ["300", "400", "500", "600", "700"],
+  style: ["normal"],
+  subsets: ["latin"],
+  variable: "--quicksand-font",
 });
 
 export default function Layout({
@@ -19,7 +20,7 @@ export default function Layout({
 }: LayoutProps) {
   return (
     <div
-      className={`flex flex-col  min-w-screen min-h-screen bg-darkBg text-white ${ibmPlexSans.className}`}
+      className={`${quicksand.variable} flex flex-col min-w-screen min-h-screen bg-darkBg text-white`}
     >
       <Head>
         <title>{headTitle}</title>
