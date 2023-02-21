@@ -43,3 +43,10 @@ export interface TitleComponent extends ComponentWithContent {
 export interface ExternalLinksProps extends ComponentWithContent {
   href: string;
 }
+
+export interface ProjectCardProps {
+  imageUrl: string;
+  title: string;
+  description: string;
+  link: string;
+}
