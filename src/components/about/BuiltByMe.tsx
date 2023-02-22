@@ -53,14 +53,14 @@ export default function BuiltByMe() {
           imageUrl="/images/ecdsa.png"
           title="ECDSA Node"
           description="A React front end that allow you to send signed messages using Elliptic Curve Digital Sign Algorithm."
-          link="https://github.com/Cocodrilette/30-days-of-javascript/tree/main/hold-shift-to-check-multiple-checkboxes"
+          link="https://github.com/Cocodrilette/ECDSA-Node"
         />
 
         <ProjectCard
           imageUrl="/images/raccoon.jpg"
           title="This site"
           description="Obviously this site also was built be me... and yes, that's a raccoon."
-          link="https://github.com/Cocodrilette/30-days-of-javascript/tree/main/hold-shift-to-check-multiple-checkboxes"
+          link="https://github.com/Cocodrilette/blog"
         />
       </div>
     </div>
