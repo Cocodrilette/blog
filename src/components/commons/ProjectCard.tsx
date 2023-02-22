@@ -13,6 +13,8 @@ export default function ProjectCard({
         className="flex flex-col"
         href={link}
         aria-details="Link to the project showed"
+        target="_blank"
+        rel="noreferrer"
       >
         <div>
           <Image
