@@ -2,7 +2,7 @@ import ProjectCard from "../commons/ProjectCard";
 
 export default function BuiltByMe() {
   return (
-    <div className="my-10">
+    <div className="mb-20">
       <h2 className="md:text-5xl text-3xl drop-shadow-xl mb-10 font-extrabold text-slate-100">
         What I built?
       </h2>

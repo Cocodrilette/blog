@@ -2,7 +2,7 @@ import { BsTwitter, BsGithub, BsLinkedin } from "react-icons/bs";
 
 export default function SocialsIcons() {
   return (
-    <div className="flex gap-3 items-center">
+    <div className="flex lg:gap-3 gap-5 items-center">
       <a
         href="https://twitter.com/cocodrilette"
         target="_blank"
