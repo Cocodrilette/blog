@@ -10,15 +10,8 @@ export default function BuiltByMe() {
         <ProjectCard
           imageUrl="/images/dotlabs.png"
           title="dotlabs(Medellin)"
-          description="Landing page built to dotlabs() hackathon built with Astro."
+          description="Landing page built to dotlabs() hackathon built with Astro and Tailwind."
           link="https://dotlabs.academy/"
-        />
-
-        <ProjectCard
-          imageUrl="/images/dotlabs-calendar.png"
-          title="dotlabs() workshops"
-          description="Landing page built to dotlabs workshops calendar built with Astro."
-          link="https://dotlabs-workshops-calendar.vercel.app/"
         />
 
         <ProjectCard
@@ -31,7 +24,7 @@ export default function BuiltByMe() {
         <ProjectCard
           imageUrl="/images/gotify.png"
           title="Gotify"
-          description="MVP built for the Web3ForU hackathon."
+          description="MVP built for the Web3ForU hackathon using React (Next.js) and Tailwind."
           link="https://github.com/Cocodrilette/hackathon-web3forU"
         />
 
@@ -45,21 +38,21 @@ export default function BuiltByMe() {
         <ProjectCard
           imageUrl="/images/hold-shift.gif"
           title="Hold Shift to Check Checkboxes"
-          description="Holds shift to check checkboxes features using vanilla JS."
+          description="Holds shift to check multiple checkboxes feature using vanilla JS."
           link="https://github.com/Cocodrilette/30-days-of-javascript/tree/main/hold-shift-to-check-multiple-checkboxes"
         />
 
         <ProjectCard
           imageUrl="/images/ecdsa.png"
           title="ECDSA Node"
-          description="A React front end that allow you to send signed messages using Elliptic Curve Digital Sign Algorithm."
+          description="A React frontend that allow you to send signed messages using Elliptic Curve Digital Sign Algorithm from ethereum cryptography package."
           link="https://github.com/Cocodrilette/ECDSA-Node"
         />
 
         <ProjectCard
           imageUrl="/images/raccoon.jpg"
           title="This site"
-          description="Obviously this site also was built be me... and yes, that's a raccoon."
+          description="Obviously this site also was built be me... and yes, that's a raccoon. I'm using Next.js, Tailwind and TypeScript."
           link="https://github.com/Cocodrilette/blog"
         />
       </div>

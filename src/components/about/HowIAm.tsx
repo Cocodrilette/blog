@@ -1,5 +1,7 @@
+import Link from "next/link";
 import SocialsButtons from "../commons/socials/SocialButtons";
 import ExternalLink from "../links/ExternalLink";
+import InternalLink from "../links/InternalLink";
 
 export default function HowIAm() {
   return (
@@ -30,7 +32,8 @@ export default function HowIAm() {
             content="dotlabs()"
             href="https://www.instagram.com/dotlabs__/"
           />
-          . You are welcome to follow me on my socials below.
+          . You are welcome to follow me on my socials below and read the{" "}
+          <InternalLink href="/blog" content="blog" />.
         </p>
 
         <SocialsButtons />
