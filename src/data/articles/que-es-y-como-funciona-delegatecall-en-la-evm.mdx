@@ -1,0 +1,96 @@
+---
+title: ¿Qué es y cómo funciona 'delegatecall' en la EVM?
+description: La función de bajo nivel 'delegatecall' en la Ethereum Virtual Machine (EVM) es una de las características más poderosas de la cadena de bloques Ethereum. En este artículo, exploraremos en detalle cómo funciona "delegatecall" y cómo se usa en los contratos inteligentes.
+publishedAt: 2023/02/26
+tags:
+  - Solidity
+  - Ethereum
+  - EVM
+  - Smart Contract
+---
+
+<InnerPostH2 content="¿Qué es 'delegatecall'?" />
+
+`delegatecall` es una de las instrucciones de bajo nivel en la EVM que permite a un contrato inteligente llamar a otro contrato inteligente y ejecutar su código como si fuera su propio código. La función "delegatecall" se utiliza para separar la lógica de un contrato inteligente en múltiples contratos inteligentes, lo que puede mejorar la modularidad y la reutilización del código.
+
+Cuando se llama a un contrato inteligente utilizando "delegatecall", el contrato inteligente receptor se ejecuta en el mismo contexto de almacenamiento que el contrato inteligente que lo llama. Esto significa que el contrato inteligente receptor puede acceder a las variables de almacenamiento y los contratos inteligentes que el contrato inteligente que lo llama puede acceder.
+
+<InnerPostH2 content="¿Cómo funciona 'delegatecall'?" />
+
+Para usar "delegatecall", el contrato inteligente debe proporcionar tres argumentos: el destino, la función y los argumentos. El destino es la dirección del contrato inteligente receptor, la función es el identificador de la función que se va a llamar y los argumentos son los parámetros que se van a pasar a la función.
+
+Cuando se ejecuta "delegatecall", el contrato inteligente receptor se ejecuta en el mismo contexto de almacenamiento que el contrato inteligente que lo llama. El contrato inteligente receptor utiliza la memoria y el almacenamiento del contrato inteligente que lo llama. Sin embargo, el contrato inteligente receptor no puede acceder a la memoria del contrato inteligente que lo llama.
+
+Si la llamada a "delegatecall" es exitosa, el contrato inteligente que lo llama puede continuar su ejecución con los cambios realizados por el contrato inteligente receptor en su contexto de almacenamiento. Si la llamada a "delegatecall" no es exitosa, se revierte el estado del contrato inteligente que lo llama.
+
+<InnerPostH2 content="¿Cómo se usa 'delegatecall'?" />
+
+A continuación, veremos algunos ejemplos de cómo se puede utilizar "delegatecall" en los contratos inteligentes de Ethereum:
+
+**Ejemplo 1**: Separar la lógica del control de saldos y las transferencias en un contrato ERC20
+
+En un contrato ERC20, la lógica del control de saldos y las transferencias puede ser separada en dos contratos inteligentes diferentes utilizando "delegatecall". En el contrato inteligente principal, se llama a la función "transfer" en el contrato inteligente de transferencia utilizando "delegatecall".
+
+```javascript
+contract ERC20 {
+  address public transferContract;
+
+  function setTransferContract(address _transferContract) public {
+    transferContract = _transferContract;
+  }
+
+  function transfer(address _to, uint256 _value) public returns (bool) {
+    (bool success, ) = transferContract.delegatecall(
+      abi.encodeWithSignature("transfer(address,uint256)", _to, _value)
+    );
+    return success;
+  }
+}
+
+contract TransferContract {
+  mapping(address => uint256) public balances;
+
+  function transfer(address _to, uint256 _value) public returns (bool) {
+    balances[msg.sender] -= _value;
+    balances[_to] += _value;
+    return true;
+  }
+}
+```
+
+En este ejemplo, el contrato inteligente "ERC20" tiene una variable pública "transferContract" que se establece utilizando la función "setTransferContract". Cuando se llama a la función "transfer" en el contrato inteligente "ERC20", se llama a la función "transfer" en el contrato inteligente "TransferContract" utilizando "delegatecall".
+
+El contrato inteligente "TransferContract" maneja la lógica del control de saldos y las transferencias. El contrato inteligente "ERC20" solo maneja el control de acceso y llama a la función "transfer" en el contrato inteligente "TransferContract" utilizando "delegatecall".
+
+**Ejemplo 2**: Actualización de contratos inteligentes
+
+En este ejemplo, se tiene un contrato inteligente llamado "Storage" que almacena un valor y se utiliza "delegatecall" para actualizar su lógica sin interrumpir su funcionamiento.
+
+```javascript
+contract Storage {
+  uint256 public value;
+
+  function setValue(uint256 _value) public {
+    value = _value;
+  }
+}
+```
+
+En este ejemplo, se tiene un contrato inteligente llamado "Storage" que almacena un valor. Ahora, supongamos que hay una vulnerabilidad en la función setValue y se debe actualizar su lógica. En lugar de interrumpir el funcionamiento del contrato Storage, se puede crear un nuevo contrato inteligente llamado "NewStorage" que contiene la versión corregida de la función setValue y utiliza delegatecall para llamar a la función setValue en el contrato Storage.
+
+```javascript
+contract NewStorage {
+  function setValue(uint256 _value) public {
+    require(_value > 0, "Value must be greater than 0");
+    bytes memory payload = abi.encodeWithSignature("setValue(uint256)", _value);
+    (bool success, ) = address(0x1234567890123456789012345678901234567890).delegatecall(payload);
+    require(success, "Delegatecall failed");
+  }
+}
+```
+
+En este ejemplo, la función setValue en el contrato NewStorage utiliza la función delegatecall para llamar a la función setValue en el contrato Storage. Ahora, el contrato Storage utiliza la versión corregida de la función setValue sin interrumpir su funcionamiento.
+
+<InnerPostH2 content="Conclusión" />
+
+"Delegatecall" es una función de bajo nivel en la Ethereum Virtual Machine (EVM) que permite a un contrato inteligente llamar a una función de otro contrato inteligente y ejecutar su código en el contexto del contrato inteligente que llama. Esta función es útil para separar la lógica del contrato inteligente, reutilizar código y actualizar contratos inteligentes sin interrumpir su funcionamiento. Sin embargo, "delegatecall" también presenta riesgos y debe usarse con precaución para evitar posibles vulnerabilidades de seguridad.

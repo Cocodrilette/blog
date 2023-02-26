@@ -27,7 +27,7 @@ export default function ArticleCard({
       </div>
       <p>{description}</p>
       <div className="flex gap-3">
-        {tags.map((tag, i) => (
+        {tags?.map((tag, i) => (
           <Tag content={tag} key={i} />
         ))}
       </div>
