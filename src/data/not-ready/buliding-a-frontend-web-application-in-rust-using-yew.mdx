@@ -1,0 +1,73 @@
+---
+title: Building a fontend web application in Rust using Yew
+description: "Yew is a Rust framework for building modern web applications that runs in the browser. In this blog post, we will explore how to build a frontend app in Rust using the Yew framework."
+publishedAt: 2023/03/04
+tags:
+  - Rust
+  - Frontend
+  - React
+  - Yew
+  - Web development
+  - WebAssembly
+---
+
+## Introduction
+
+Rust is a systems programming language that has gained a lot of popularity in recent years. It is known for its memory safety guarantees and high performance. However, Rust is not just limited to system programming. It can also be used for web development, and this is where the Yew framework comes in. Yew is a Rust framework for building modern web applications that runs in the browser. In this blog post, we will explore how to build a frontend app in Rust using the Yew framework.
+
+## Yew Framework
+
+Yew is a modern Rust framework for building web applications. It is inspired by React and Elm, and uses a virtual DOM to update the browser's DOM. Yew is a full-featured framework that comes with everything you need to build a modern web application. It provides a way to handle events, manage state, and render components. Yew's syntax is similar to React, which makes it easy for developers who are familiar with React to get started with Yew. Yew is also designed to be fast and efficient, which makes it a great choice for building high-performance web applications.
+
+## Building a Frontend App with Yew
+
+### Prerrequisites
+
+- We need to [install Rust in our system](https://www.rust-lang.org/tools/install).
+- We also need to install WebAssembly target. Rust can compile source codes for different "targets" (e.g. different processors). The compilation target for browser-based WebAssembly is called `wasm32-unknown-unknown`. The following command will add the WebAssembly target to your development environment.
+
+```bash
+rustup target add wasm32-unknown-unknown
+```
+
+- Additionally we need to install [Trunk](https://trunkrs.dev/). Trunk is a build tool specifically designed for building Rust and WebAssembly applications. It is similar to tools like Webpack and Parcel in the JavaScript ecosystem. Overall, Trunk is a great tool for building web applications with Rust and WebAssembly.
+
+## Setting up our app
+
+### Creating new project
+
+To get started, create a new cargo project.
+
+```bash
+cargo new <your_app_name>
+```
+
+If you are familiar with Rust you know this show `hello world` to the console. If not, you can try
+
+```bash
+cargo run
+```
+
+And you will see it.
+
+### Setting up the project as a Yew web application[](https://yew.rs/docs/getting-started/build-a-sample-app#setting-up-the-project-as-a-yew-web-application)
+
+To convert this simple command line application to a basic Yew web application, a few changes are needed.
+
+### Update Cargo.toml[](https://yew.rs/docs/getting-started/build-a-sample-app#update-cargotoml)
+
+Add `yew` to the list of dependencies.
+
+**Cargo.toml**
+
+```toml
+[package]
+name = "todo_app"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+yew = { version = "0.20.0", features = ["csr"] }
+```

@@ -1,0 +1,394 @@
+---
+title: Governanza en blockchain
+description: La gobernanza en blockchain es un tema crítico para garantizar la transparencia y la toma de decisiones en las comunidades descentralizadas. En este articulo creamos nuestro propio Governor from scratch para entender que problemas soluciona OpenZeppelin con su Governor Standard.
+publishedAt: 2023/03/18
+tags:
+  - Solidity
+  - Ethereum
+  - Smart Contract
+  - Open Zeppelin
+  - Blockchain
+  - Ethers.js
+---
+
+## Introduccion
+
+Las comunidades (o protocolos) descentralizados que nos ha enseñado blockchain siguen evolucionando hacia formas complejas de gobernanza y autogestión. Nuevas formas de participación democrática, un poco más eficientes y directas, se han estado desarrollando al mismo tiempo que la cadena de bloques. El proceso mediante el cual estas comunidades toman decisiones se conoce como **on-chain governance** y es una pieza fundamental en este sistema, impulsando decisiones variadas como el ajuste de parámetros, actualizaciones de contratos inteligentes, integraciones con otros protocolos, gestión de capital, subvenciones, etc.
+
+Este protocolo de gobernanza generalmente se implementa en un contrato especial llamado _"Governor"_. En esta ocasion creamos un contrato de governanza desde cero para entender las complejidades de estos sistema y la importancia de las soluciones que ofrece [OpenZeppelin](https://www.openzeppelin.com/).
+
+Un flujo comun en protocolos de governanza puede ser el siguiente:
+
+![Untitled](https://ipfs.filebase.io/ipfs/QmUCPknqKbwZbZmyXqhwDRVmhCLJqQaPgxrGRv6GqRkHqX)
+
+## Governor
+
+### Proposals
+
+En esta primera parte, nos enfocaremos en el almacenamiento de nuevas propuestas.
+
+Nuestro objetivo será:
+
+1. Crear un array público de tipo `Proposal` y llámarlo `proposals`.
+2. Crear una función externa `newProposal` que tome dos argumentos:
+   - Un argumento `address` que será la dirección de destino de la propuesta. **Enviaremos calldata a esta dirección.**
+   - Un argumento `bytes` que será el _calldata_ que se enviará al contrato inteligente cuando se ejecute la propuesta.
+3. En la función `newProposal`, crearemos una nueva `Proposal` con los argumentos pasados y los recuentos de votos sí / no se inicializan en `0`.
+4. Agregar la nueva `Proposal` al array `proposals`.
+
+```typescript
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.4;
+
+contract Voting {
+    struct Proposal {
+        address target;
+        bytes data;
+        uint yesCount;
+        uint noCount;
+    }
+
+    Proposal[] public proposals;
+
+    function newProposal(address _target, bytes calldata _data) external {
+        proposals.push(Proposal(_target, _data, 0, 0));
+    }
+}
+```
+
+### Voting
+
+Ahora que tenemos una forma de contar los votos a favor o en contra de una propuesta, lo siguiente será permitir a un usuario votar por una propuesta.
+
+Nuestro objetivo será:
+
+1. Crear una función _external_ `castVote` que tome un `uint` _proposalId_ y un `bool` que indique si la apoya la propuesta o no (`true` para sí, `false` para no).
+2. Para cada voto emitido, actualizaremos los valores `yesCount` o `noCount` en la propuesta.
+
+```typescript
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.4;
+
+contract Voting {
+    struct Proposal {
+        address target;
+        bytes data;
+        uint yesCount;
+        uint noCount;
+    }
+
+    Proposal[] public proposals;
+
+    function newProposal(address _target, bytes calldata _data) external {
+        proposals.push(Proposal(_target, _data, 0, 0));
+    }
+
+    function castVote(uint _proposalId, bool _supports) external {
+        Proposal storage proposal = proposals[_proposalId];
+
+        if(_supports) {
+            proposal.yesCount++;
+        }
+        else {
+            proposal.noCount++;
+        }
+    }
+}
+```
+
+### **Multiple Votes**
+
+Ahora necesitamos manejar el caso en el que una dirección **vote dos veces**.
+
+Una forma potencial de manejar esto es prevenir que los votantes voten dos veces. Sin embargo, ¿qué sucede si quieren cambiar su voto?
+
+Permitamos que los votantes _cambien su voto_. Agregar esta funcionalidad requerirá que tengamos en cuenta el cambio de voto en el recuento de votos. Esto significa que si la dirección previamente votó sí y cambió a no, querremos restar el recuento de sí y sumar el de no.
+
+Nuestro objetivo será:
+
+1. Modificar la función `castVote` para permitir a los votantes cambiar su voto para una propuesta en particular.
+
+```typescript
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.4;
+
+contract Voting {
+    enum VoteStates {Absent, Yes, No}
+
+    struct Proposal {
+        address target;
+        bytes data;
+        uint yesCount;
+        uint noCount;
+        mapping (address => VoteStates) voteStates;
+    }
+
+    Proposal[] public proposals;
+
+    function newProposal(address _target, bytes calldata _data) external {
+        Proposal storage proposal = proposals.push();
+        proposal.target = _target;
+        proposal.data = _data;
+    }
+
+    function castVote(uint _proposalId, bool _supports) external {
+        Proposal storage proposal = proposals[_proposalId];
+
+        // clear out previous vote
+        if(proposal.voteStates[msg.sender] == VoteStates.Yes) {
+            proposal.yesCount--;
+        }
+
+        if(proposal.voteStates[msg.sender] == VoteStates.No) {
+            proposal.noCount--;
+        }
+
+        // add new vote
+        if(_supports) {
+            proposal.yesCount++;
+        }
+        else {
+            proposal.noCount++;
+        }
+
+        // we're tracking whether or not someone has already voted
+        // and we're keeping track as well of what they voted
+        proposal.voteStates[msg.sender] = _supports ? VoteStates.Yes : VoteStates.No;
+    }
+}
+```
+
+### Events
+
+Para hacer que sea fácil para la interfaz de usuario suscribirse a nuevos eventos de propuestas y votaciones, agregaremos algunos eventos para que posteriormente podamos escucharlos en nuestra DApp.
+
+Nuestro objetivo será:
+
+1. Crear un evento `ProposalCreated` que tome un único argumento: un `uint` que represente el ID de la propuesta . Vamos a emitir este evento cada vez que se cree una nueva `Proposal`.
+2. Crear un evento `VoteCast` que tome dos argumentos: un `uint` que represente el ID de la propuesta y un `address` para la dirección del votante. Vamos a emitir este evento cada vez que se emita un nuevo voto.
+
+```typescript
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.4;
+
+contract Voting {
+    enum VoteStates {Absent, Yes, No}
+
+    struct Proposal {
+        address target;
+        bytes data;
+        uint yesCount;
+        uint noCount;
+        mapping (address => VoteStates) voteStates;
+    }
+
+    Proposal[] public proposals;
+
+    event ProposalCreated(uint);
+    event VoteCast(uint, address indexed);
+
+    function newProposal(address _target, bytes calldata _data) external {
+        Proposal storage proposal = proposals.push();
+        proposal.target = _target;
+        proposal.data = _data;
+        emit ProposalCreated(proposals.length - 1);
+    }
+
+    function castVote(uint _proposalId, bool _supports) external {
+        Proposal storage proposal = proposals[_proposalId];
+
+        // clear out previous vote
+        if(proposal.voteStates[msg.sender] == VoteStates.Yes) {
+            proposal.yesCount--;
+        }
+        if(proposal.voteStates[msg.sender] == VoteStates.No) {
+            proposal.noCount--;
+        }
+
+        // add new vote
+        if(_supports) {
+            proposal.yesCount++;
+        }
+        else {
+            proposal.noCount++;
+        }
+
+        // we're tracking whether or not someone has already voted
+        // and we're keeping track as well of what they voted
+        proposal.voteStates[msg.sender] = _supports ? VoteStates.Yes : VoteStates.No;
+
+        emit VoteCast(_proposalId, msg.sender);
+    }
+}
+```
+
+### **Voting Members**
+
+Es importante para nosotros mantener una lista de los miembros de la governanza. Después de todo, es relativamente fácil para cualquier persona crear cientos de direcciones de Ethereum muy rápidamente y votar con cada una de estas direcciones.
+
+<aside>
+  💡 El fenomeno mediante el cual una sola persona opera muchas cuentas se
+  conoce como un **[Sybil Attack](https://en.wikipedia.org/wiki/Sybil_attack)**.
+  Cualquier sistema que esté configurado para manejar esto se conoce como
+  **[Sybil Resistant](https://en.wikipedia.org/wiki/Sybil_attack#Prevention)**.
+</aside>
+
+Nuestro objetivo será:
+
+1. Crear un `constructor` que tome un arreglo de `address`. Estas direcciones, junto con el _deployer_ de la función, deben tener permitido crear nuevas propuestas y votar en ellas.
+2. Si alguien más intenta crear una propuesta o votar, la transacción tendrá que ser revertida.
+
+```typescript
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.4;
+
+contract Voting {
+    enum VoteStates {Absent, Yes, No}
+
+    struct Proposal {
+        address target;
+        bytes data;
+        uint yesCount;
+        uint noCount;
+        mapping (address => VoteStates) voteStates;
+    }
+
+    Proposal[] public proposals;
+    mapping(address => bool) members;
+
+    event ProposalCreated(uint);
+    event VoteCast(uint, address indexed);
+
+    modifier onlyMembers() {
+        if (!members[msg.sender]) revert("Only member action");
+        _;
+    }
+
+    constructor(address[] memory _members) {
+        members[msg.sender] = true;
+        for(uint i = 0; i < _members.length; i++) {
+            members[_members[i]] = true;
+        }
+    }
+
+    function newProposal(address _target, bytes calldata _data) external onlyMembers {
+        Proposal storage proposal = proposals.push();
+        proposal.target = _target;
+        proposal.data = _data;
+        emit ProposalCreated(proposals.length - 1);
+    }
+
+    function castVote(uint _proposalId, bool _supports) external onlyMembers {
+        Proposal storage proposal = proposals[_proposalId];
+
+        // clear out previous vote
+        if(proposal.voteStates[msg.sender] == VoteStates.Yes) {
+            proposal.yesCount--;
+        }
+        if(proposal.voteStates[msg.sender] == VoteStates.No) {
+            proposal.noCount--;
+        }
+
+        // add new vote
+        if(_supports) {
+            proposal.yesCount++;
+        }
+        else {
+            proposal.noCount++;
+        }
+
+        // we're tracking whether or not someone has already voted
+        // and we're keeping track as well of what they voted
+        proposal.voteStates[msg.sender] = _supports ? VoteStates.Yes : VoteStates.No;
+
+        emit VoteCast(_proposalId, msg.sender);
+    }
+}
+
+```
+
+### **Execute**
+
+En los sistemas de gobernanza suele haber una participación mínima de votación que debe alcanzarse antes de que se pueda ejecutar una propuesta. La mayoría de los sistemas de gobernanza hoy en día utilizan la votación por tokens, donde el número de tokens ERC20 que posees determina el peso de tu voto.
+
+Nuestro objetivo será:
+
+Establecer nuestro umbral mínimo de votación en 10 participantes. Una vez que 10 miembros hayan votado a favor de una propuesta, la ejecutaremos.
+
+1. Actualizar la función `castVote` para ejecutar la propuesta cuando se hayan registrado los 10 votos afirmativos.
+2. Ejecutar la votación enviando los datos a la dirección `target` a través del método `call`.
+
+```typescript
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.4;
+
+contract Voting {
+    enum VoteStates {Absent, Yes, No}
+    uint constant VOTE_THRESHOLD = 10;
+
+    struct Proposal {
+        address target;
+        bytes data;
+        uint yesCount;
+        uint noCount;
+        mapping (address => VoteStates) voteStates;
+    }
+
+    Proposal[] public proposals;
+    mapping(address => bool) members;
+
+    event ProposalCreated(uint);
+    event VoteCast(uint, address indexed);
+
+    modifier onlyMembers() {
+        if (!members[msg.sender]) revert("Only member action");
+        _;
+    }
+
+    constructor(address[] memory _members) {
+        members[msg.sender] = true;
+        for(uint i = 0; i < _members.length; i++) {
+            members[_members[i]] = true;
+        }
+    }
+
+    function newProposal(address _target, bytes calldata _data) external onlyMembers {
+        Proposal storage proposal = proposals.push();
+        proposal.target = _target;
+        proposal.data = _data;
+        emit ProposalCreated(proposals.length - 1);
+    }
+
+    function castVote(uint _proposalId, bool _supports) external onlyMembers {
+        Proposal storage proposal = proposals[_proposalId];
+
+        // clear out previous vote
+        if(proposal.voteStates[msg.sender] == VoteStates.Yes) {
+            proposal.yesCount--;
+        }
+        if(proposal.voteStates[msg.sender] == VoteStates.No) {
+            proposal.noCount--;
+        }
+
+        // add new vote
+        if(_supports) {
+            proposal.yesCount++;
+        }
+        else {
+            proposal.noCount++;
+        }
+
+        // we're tracking whether or not someone has already voted
+        // and we're keeping track as well of what they voted
+        proposal.voteStates[msg.sender] = _supports ? VoteStates.Yes : VoteStates.No;
+
+        emit VoteCast(_proposalId, msg.sender);
+
+        if(proposal.yesCount == VOTE_THRESHOLD && !proposal.executed) {
+            (bool success, ) = proposal.target.call(proposal.data);
+            require(success);
+        }
+    }
+}
+
+```

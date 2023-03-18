@@ -27,7 +27,7 @@ export default function Layout({
         <meta name="author" content="Juan Fernando Cogollo Doria" />
         <meta name="description" content={headDescription} />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
-        <meta name="robots" content="index, follow" />
+        <meta name="robots" content="index,follow" />
         {keywords && <meta name="keywords" content={keywords} />}
         <link rel="icon" href="/favicon.ico" />
       </Head>
