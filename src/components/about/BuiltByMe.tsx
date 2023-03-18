@@ -8,10 +8,17 @@ export default function BuiltByMe() {
       </h2>
       <div className="grid md:grid-cols-2 grid-cols-1 gap-10 ">
         <ProjectCard
-          imageUrl="/images/alianza-juridica.png"
+          imageUrl="/images/dotlabs.png"
           title="dotlabs(Medellin)"
           description="Landing page built to dotlabs() hackathon built with Astro and Tailwind."
           link="https://dotlabs.academy/"
+        />
+
+        <ProjectCard
+          imageUrl="/images/dotlabs-calendar.png"
+          title="dotlabs() Workshops calendar"
+          description="Calendar built for the dotlabs() workshops using Next.js and Tailwind."
+          link="https://dotlabs-workshops-calendar.vercel.app/"
         />
 
         <ProjectCard
