@@ -8,10 +8,17 @@ export default function BuiltByMe() {
       </h2>
       <div className="grid md:grid-cols-2 grid-cols-1 gap-10 ">
         <ProjectCard
-          imageUrl="/images/dotlabs.png"
+          imageUrl="/images/alianza-juridica.png"
           title="dotlabs(Medellin)"
           description="Landing page built to dotlabs() hackathon built with Astro and Tailwind."
           link="https://dotlabs.academy/"
+        />
+
+        <ProjectCard
+          imageUrl="/images/alianza-juridica.png"
+          title="Alianza Juridica & Servicios Integrales S.A.S"
+          description="Web page built for a law firm in Medellin, Colombia. Built with Next.js and Tailwind."
+          link="https://alianza-juridica.com/"
         />
 
         <ProjectCard
@@ -26,13 +33,6 @@ export default function BuiltByMe() {
           title="Gotify"
           description="MVP built for the Web3ForU hackathon using React (Next.js) and Tailwind."
           link="https://github.com/Cocodrilette/hackathon-web3forU"
-        />
-
-        <ProjectCard
-          imageUrl="/images/flex-panels.jpeg"
-          title="Flex Panels"
-          description="Flex panels animation using vanilla CSS."
-          link="https://github.com/Cocodrilette/30-days-of-javascript/tree/main/flex-panels"
         />
 
         <ProjectCard
