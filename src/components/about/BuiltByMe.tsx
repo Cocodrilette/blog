@@ -23,7 +23,7 @@ export default function BuiltByMe() {
 
         <ProjectCard
           imageUrl="/images/alianza-juridica.png"
-          title="Alianza Juridica & Servicios Integrales S.A.S"
+          title="Alianza Juridica S.A.S"
           description="Web page built for a law firm in Medellin, Colombia. Built with Next.js and Tailwind."
           link="https://alianza-juridica.com/"
         />
