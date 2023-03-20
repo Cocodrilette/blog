@@ -1,0 +1,109 @@
+---
+title: Buenas prácticas de seguridad para Smart Contracts en Ethereum. Filosofía general.
+description: En este, el primer articulo de la seríe "Buenas prácticas de seguridad para Smart Contracts en Ethereum", vamos a exponer algunas consideraciones generales para escribir contratos inteligentes seguros y mantenibles.
+publishedAt: 2023/03/20
+tags:
+  - Solidity
+  - Ethereum
+  - EVM
+  - Smart Contract
+  - Seguridad
+  - Buenas prácticas
+---
+
+## Introducción
+
+Los Smart Contracts, o contratos inteligentes, son programas informáticos que se ejecutan automáticamente y actúan como intermediarios en la negociación o ejecución de acuerdos entre partes. Estos contratos son una de las aplicaciones más populares de la tecnología blockchain y se utilizan en una variedad de sectores, desde finanzas hasta seguros, pasando por la logística y el transporte. Sin embargo, dado que generalmente los Smart Contracts manejan grandes cantidades de activos digitales y toman decisiones autónomas, es esencial que se diseñen e implementen de manera segura. En esta serie de artículos, exploraremos algunas buenas prácticas de seguridad que los desarrolladores de Smart Contracts pueden utilizar para minimizar los riesgos asociados con su uso.
+
+En este y los próximos artículos de la serie asumiremos que tienes un conocimiento intermedio de desarrollo de Smart Contracts en Ethereum. Si necesitas adquirir o reforzar los conceptos básicos al respecto, te recomendamos visitar los cursos de [LearnWeb3](https://learnweb3.io/courses) antes de continuar.
+
+El contenido que desarrollaremos a continuación está basado en el documento [Ethereum Smart Contract Best Practices](https://consensys.github.io/smart-contract-best-practices/), desarrollado y mantenido por el equipo de [ConsenSys Diligence](https://consensys.net/diligence/).
+
+## Filosofía general
+
+Ethereum y los programas complejos en blockchain son nuevos y altamente experimentales. Por lo tanto, debes esperar cambios constantes en el panorama de la seguridad, a medida que se descubren nuevos errores y se desarrollan nuevas y mejores prácticas de desarrollo. Por lo tanto, seguir las recomendaciones que aquí haremos es sólo el principio del trabajo de seguridad que tendrás que hacer como desarrollador de contratos inteligentes.
+
+La programación de contratos inteligentes requiere una mentalidad de ingeniería diferente a la que puedes estar acostumbrado. El coste del fracaso puede ser alto, y el cambio puede ser difícil, por lo que en algunos aspectos es más similar a la programación de hardware o a la programación de servicios financieros que al desarrollo web o móvil. Por tanto, no basta con defenderse de las vulnerabilidades conocidas. En su lugar, tendrás que aprender una nueva filosofía de desarrollo:
+
+## Prepárate para los problemas
+
+Cualquier contrato medianamente complejo tendrá errores, y como desarrollador o desarrolladora debes aceptar este mantra. Por lo tanto, tu código debe ser capaz de responder a los errores y vulnerabilidades con la menor fricción posible, es decir, los errores deben solucionarse rápido y sin causar más problemas.
+
+Tu contrato debe ser capaz de:
+
+- Ser “pausado” cuando las cosas vayan mal, impidiendo la ejecución de aquellas operaciones vulnerables pero permitiendo aquellas que no, de manera que el servicio no se interrumpa completamente. El contrato [Pausable.sol de OpenZeppelin](https://docs.openzeppelin.com/contracts/4.x/api/security#Pausable) es una buena forma de encarar este problema.
+- Gestionar la cantidad de dinero en riesgo (limitación de tarifas, uso máximo). Si tu contrato ofrece servicios financieros u otro tipo de servicios que requieran custodia de capital, deberías evitar que el balance de tu contrato se pueda extraer en una sola transacción, de manera que antes escenarios de vulneración puedas reaccionar a tiempo y salvar la mayor cantidad de dinero posible.
+- Disponer de una vía de actualización eficaz para la corrección de errores y mejoras. Si bien la inmutabilidad es un elemento fundamental en Blockchain, existen métodos que nos permiten crear contratos actualizables, permitiéndonos de esa forma reparar errores y vulnerabilidades que encontremos una vez desplegado nuestro contrato. Utilizar proxies es una solución común a este problema y [OpenZeppelin ofrece una serie de contratos que nos facilitan esto](https://docs.openzeppelin.com/contracts/4.x/api/proxy).
+
+## Mantente actualizado
+
+Realiza un seguimiento de los nuevos desarrollos de seguridad.
+
+- Revisa tus contratos en busca de cualquier nueva falla tan pronto como sea descubierta.
+- Actualiza a la última versión de cualquier herramienta o biblioteca tan pronto como sea posible.
+- Adopta nuevas técnicas de seguridad que parezcan útiles.
+
+Un ejemplo muy conocido de actualizaciones importantes de seguridad en Ethereum (en Solidity específicamente) fue el que introdujo la versión 0.8.0 del compilador al [hacer validaciones en tiempo de ejecución de overflow y underflow de números enteros](https://ethereum-blockchain-developer.com/010-solidity-basics/03-integer-overflow-underflow/). Antes de la versión 0.8.0 era común usar librerías de terceros ([SafeMath de OpenZeppelin es una de ellas](https://docs.openzeppelin.com/contracts/2.x/api/math#SafeMath)) para evitar este tipo de complicaciones.
+
+## Mantén tu código simple
+
+La complejidad aumenta la probabilidad de errores.
+
+- Asegúrate de que la lógica del contrato sea lo más simple posible.
+- Modulariza el código para mantener los contratos y funciones lo más pequeños posibles. Reduce el área de fallo.
+- Usa herramientas o código ya escritos cuando sea posible (por ejemplo, no crees tu propio generador de números aleatorios o tu propia implementación de ERC-20). Antes de crear tus propias soluciones, busca soluciones existentes. Solo si no las encuentras, crea las tuyas. Existen muchas compañías que se dedican a crear herramientas y estándares de seguridad para contratos inteligentes ([Consensys](https://consensys.net/diligence/tools/), [Safe](https://safe.global/core), [Open Zeppelin](https://docs.openzeppelin.com/contracts/4.x/), [Compound](https://compound.finance/), [Chainlink](https://chain.link/) son algunas de ellas).
+- Prefiere la claridad en lugar del rendimiento siempre que sea posible. Si bien es cierto es importante reducir el costo de las operaciones en tus contratos, también es cierto que más vale un contrato seguro a un contrato eficiente si tus fondos son saqueados. Encuentra el balance, pero prefiere la claridad.
+- Solo usa blockchain para las partes de su sistema que requieran descentralización. No intentes encajar blockchain a golpes en tus sistemas, úsalo para lo que es bueno.
+
+## Ten cuidado al desplegar
+
+Siempre es mejor detectar errores antes de un lanzamiento completo a producción.
+
+- Asegúrate de probar tus contratos a fondo y añade pruebas cada vez que se descubran nuevos vectores de ataque. Para evitar posibles sesgos, es recomendable que la persona encargada de probar tus contratos no sea la misma que los desarrolló. Acude a auditores externos siempre que sea posible.
+- Ofrece [recompensas por errores](https://consensys.github.io/smart-contract-best-practices/bug-bounty-programs/) desde las versiones de prueba de tus contratos. Es más probable que un centenar de personas encuentren más vulnerabilidades que solo una. Asegúrate de que las recompensas que ofreces sean más provechosas que explotar el fallo.
+- Lanzamiento en fases, con un aumento en el uso y las pruebas en cada fase. Aprovecha las redes de prueba para probar tus contratos en entornos reales pero controlados. Antes de ir a Mainnet asegúrate de que tu contrato funciona como debería.
+
+## Comprende cómo funciona Blockchain
+
+Si bien gran parte de tu experiencia en programación será relevante para la programación en Ethereum, hay algunos riesgos que debes tener en cuenta.
+
+- Ten mucho cuidado con las llamadas a contratos externos, que pueden ejecutar código malicioso y cambiar el flujo de control.
+- Entiende que tus funciones públicas son públicas y pueden ser llamadas malintencionadamente y en cualquier orden.
+- Los datos privados en los contratos inteligentes también son visibles para cualquier persona.
+- Ten en cuenta los costos de gas y el límite de gas del bloque.
+- Ten en cuenta que las marcas de tiempo no son precisas en una cadena de bloques, los mineros pueden influir en la hora de ejecución de una transacción con un margen de varios segundos.
+- La aleatoriedad no es trivial en la cadena de bloques, la mayoría de los enfoques para la generación de números aleatorios son manipulables. [Chainlink ofrece soluciones para generación de números aleatorios seguras y verificables](https://chain.link/vrf).
+
+## Simplicidad antes que complejidad
+
+Existen múltiples concesiones que se deben tener en cuenta a la hora de evaluar la estructura y la seguridad de un sistema de contratos inteligentes. La recomendación general para cualquier sistema de contratos inteligentes es identificar el equilibrio adecuado para estas concesiones fundamentales.
+
+Un sistema de contratos inteligentes ideal desde el punto de vista de la ingeniería de software es modular, reutiliza el código en lugar de duplicarlo y admite componentes actualizables. Un sistema de contratos inteligentes ideal desde el punto de vista de la arquitectura de seguridad puede compartir esta mentalidad, especialmente en el caso de los sistemas de contratos inteligentes más complejos.
+
+Sin embargo, hay excepciones importantes en las que la seguridad y las mejores prácticas de la ingeniería de software pueden no estar alineadas. En cada caso, el equilibrio adecuado se obtiene mediante la identificación de la combinación óptima de propiedades a lo largo de las distintas dimensiones del sistema de contratos, tales como:
+
+- Rígido vs. actualizable
+- Monolítico vs. modular
+- Duplicación vs. reutilización
+
+### Rígido vs. Actualizable
+
+Aunque muchos recursos, incluido éste, hacen hincapié en las características de maleabilidad, como los patrones "_Killable_", "_Upgradeable_" o "_Modifiable_", existe un equilibrio fundamental entre la maleabilidad y la seguridad.
+
+Por definición, los patrones de maleabilidad añaden complejidad y posibles superficies de ataque. La simplicidad es particularmente preferible a la complejidad en los casos en los que el sistema de contratos inteligentes realiza un conjunto muy limitado de funciones durante un periodo de tiempo limitado predefinido, por ejemplo, un sistema de contrato de venta de tokens con un marco temporal finito y sin gobernanza.
+
+### Monolítico vs. Modular
+
+Un contrato monolítico autocontenido mantiene todo el conocimiento localmente identificable y legible. Aunque hay pocos sistemas de contratos inteligentes que se consideren importantes y que existan como monolitos, hay argumentos a favor de la localización extrema de los datos y el flujo, por ejemplo, en el caso de optimizar la eficiencia de la revisión del código.
+
+Al igual que con los otros compromisos considerados aquí, las mejores prácticas de seguridad tienden a alejarse de las mejores prácticas de ingeniería de software en contratos simples de corta duración y tienden hacia las mejores prácticas de ingeniería de software en el caso de sistemas de contratos de duración indefinida más complejos.
+
+### Duplicación vs. Reutilización
+
+Desde el punto de vista de la ingeniería de software, un sistema de contratos inteligentes debería maximizar la reutilización en la medida de lo posible. Hay muchas maneras de reutilizar el código de contratos en Solidity. El uso de contratos previamente desplegados y probados de su propiedad es generalmente la forma más segura de lograr la reutilización del código.
+
+Con frecuencia se recurre a la duplicación en los casos en que no se dispone de contratos propios previamente implementados. Esfuerzos como los de [OpenZeppelin](https://github.com/OpenZeppelin/openzeppelin-contracts) intentan proporcionar patrones para que el código seguro pueda reutilizarse sin duplicarse. **Cualquier análisis de seguridad de contratos debe incluir cualquier código reutilizado que no haya establecido previamente un nivel de confianza proporcional a los fondos en riesgo en el sistema de contratos inteligentes en cuestión.**
+
+## Conclusión
+
+En resumen, la seguridad en los Smart Contracts es un tema crítico que requiere una mentalidad diferente a la programación convencional. Debes estar preparado para encontrarte con problemas y tener un plan para abordarlos. Mantente actualizado sobre las últimas tendencias y desarrollos en seguridad y mantén tu código lo más simple posible. Asegúrate de probar a fondo tus contratos antes de desplegarlos en producción y no dudes en acudir a auditores externos para una revisión adicional cuando sea posible.
