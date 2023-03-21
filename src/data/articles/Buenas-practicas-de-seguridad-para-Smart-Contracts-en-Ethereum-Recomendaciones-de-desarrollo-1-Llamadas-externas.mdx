@@ -1,0 +1,270 @@
+---
+title: Buenas practicas de seguridad para Smart Contracts en Ethereum. Recomendaciones de desarrollo I. LLamadas externas.
+description: En este articulo exploraremos las vulnerabilidades relacionadas con las llamadas externas a otros contratos (delegatecall) y como evitarlas.
+publishedAt: 2023/03/21
+tags:
+  - Solidity
+  - Ethereum
+  - EVM
+  - Smart Contract
+  - Seguridad
+  - Buenas prácticas
+---
+
+## Introduccion
+
+Al momento de desarrollar Smart Contracts, especialmente en la plataforma de Ethereum, surgen ciertas dificultades que debemos tener en cuenta. En este artículo dividido en 5 secciones, veremos algunas recomendaciones generales que nos ayudarán a evitar problemas comunes y mantener nuestros contratos, y por lo tanto nuestro negocio y el de nuestros clientes, seguro y a salvo de cualquier ataque.
+
+## Llamadas externas (external calls)
+
+### ¡Ten cuidado con las llamadas externas!
+
+Las llamadas a contratos que no son de confianza pueden introducir varios riesgos o errores inesperados. Las llamadas externas pueden ejecutar código malicioso en nuestro contrato o en cualquier otro del que dependa. En este sentido, cada llamada externa debe ser tratada como un riesgo potencial para la seguridad de nuestro sistema. Cuando no sea posible o no sea deseable eliminar las llamadas externas, utiliza las recomendaciones de este artículo para minimizar el riesgo.
+
+### Marca los contratos en los que no confías
+
+Cuando interactúes con contratos de terceros, nombra tus variables, métodos e interfaces de forma que quede claro que interactuar con ellos es potencialmente inseguro. Aplica esto también a tus propias funciones que llaman a contratos de terceros en los que no confías.
+
+```tsx
+// Mal
+Bank.withdraw(100); // No está claro si es de confianza o no
+
+function makeWithdrawal(uint amount) { // No está claro que esta función sea potencialmente insegura
+    Bank.withdraw(amount);
+}
+
+// Bien
+UntrustedBank.withdraw(100); // llamada externa no confiable
+TrustedBank.withdraw(100); // contrato externo pero de confianza mantenido por XYZ Corp.
+
+function makeUntrustedWithdrawal(uint amount) {
+    UntrustedBank.withdraw(amount);
+}
+```
+
+### Evita modificar tus variables de estado despues de una llamada externa
+
+Tanto si se utilizan llamadas directas (de la forma someAddress.call()) como llamadas a contratos (de la forma ExternalContract.someMethod()), hay que asumir que podría ejecutarse código malicioso. Aunque ExternalContract no sea malicioso, cualquier contrato al que llame puede ejecutar código malicioso.
+
+Un peligro particular es que el código malicioso puede secuestrar el flujo de control, dando lugar a vulnerabilidades debidas a la reentrada (reentrancy) (más adelante profundizaremos al respecto).
+
+Si estás haciendo una llamada a un contrato externo que no es de confianza, evita cambios de estado después de la llamada. Este patrón también se conoce a veces como el patrón comprobaciones-efectos-interacciones ([check-effects-interaction pattern](http://solidity.readthedocs.io/en/develop/security-considerations.html?highlight=check%20effects#use-the-checks-effects-interactions-pattern)).
+
+Véamos un ejemplo extraido de [SWC-107](https://swcregistry.io/docs/SWC-107) (_Reentrancy)._
+
+```tsx
+// ESTE CONTRATO ES VULNERABLE
+/*
+ * @source: http://blockchain.unica.it/projects/ethereum-survey/attacks.html#simpledao
+ * @author: Atzei N., Bartoletti M., Cimoli T
+ * Modified by Josselin Feist
+ */
+pragma solidity 0.4.24;
+
+contract SimpleDAO {
+  mapping (address => uint) public credit;
+
+  function donate(address to) payable public{
+    credit[to] += msg.value;
+  }
+
+  function withdraw(uint amount) public{
+    if (credit[msg.sender]>= amount) {
+      // Nota como hacemos la llamda externa en este punto...
+      require(msg.sender.call.value(amount)());
+      // y luego hacemos modificaciones a nuestra variable de estado
+      // este patron es vulnerable a ataques de reentrada
+      credit[msg.sender]-=amount;
+    }
+  }
+
+  function queryCredit(address to) view public returns(uint){
+    return credit[to];
+  }
+}
+```
+
+```tsx
+// ESTE CONTRATO NO ES VULNERABLE
+/*
+ * @source: http://blockchain.unica.it/projects/ethereum-survey/attacks.html#simpledao
+ * @author: Atzei N., Bartoletti M., Cimoli T
+ * Modified by Bernhard Mueller, Josselin Feist
+ */
+pragma solidity 0.4.24;
+
+contract SimpleDAO {
+  mapping (address => uint) public credit;
+
+  function donate(address to) payable public{
+    credit[to] += msg.value;
+  }
+
+  function withdraw(uint amount) public {
+    if (credit[msg.sender]>= amount) {
+      // Nota como aqui hacemos la modificacion a nuestra variable de estado...
+      credit[msg.sender]-=amount;
+      // y luego hacemos la llamada externa en la que NO CONFIAMOS
+      require(msg.sender.call.value(amount)());
+    }
+  }
+
+  function queryCredit(address to) view public returns (uint){
+    return credit[to];
+  }
+}
+```
+
+### No uses `.transfer()` ni `.send()`
+
+`.transfer()` y `.send()` envían exactamente 2.300 de gas al destinatario. El objetivo de este valor de gas fijo era evitar vulnerabilidades de reentrada, pero esto sólo tiene sentido si se asume que los costes de gas son constantes. Recientemente se incluyó el [EIP 1884](https://eips.ethereum.org/EIPS/eip-1884) en el hard fork de Estambul un aumento en el coste de gas de la operación SLOAD (pasó de tener un costo de 200 de gas a 800), provocando que la función fallback de un contrato cueste más de 2300 de gas.
+
+Se recomienda dejar de usar `.transfer()` y `.send()` y en su lugar usar `.call()`.
+
+```tsx
+// Mal
+contract Vulnerable {
+    function withdraw(uint256 amount) external {
+        // Esto envía 2300 gas, que puede no ser suficiente si el destinatario
+        // es un contrato y los costes del gas cambian.
+        msg.sender.transfer(amount);
+    }
+}
+
+// Bien
+contract Fixed {
+    function withdraw(uint256 amount) external {
+        // Esto reenvía todo el gas disponible.
+        (bool success, ) = msg.sender.call.value(amount)("");
+        // Nota como este método retorna un boleano que indica si la operacion
+        // fue o no exitosa. ¡Asegurate de hacer la validación correspondiente!
+        require(success, "Transfer failed.");
+    }
+}
+```
+
+Se debe tener en cuenta que `.call()` no hace nada para mitigar los ataques de reentrada, por lo que se deben tomar otras precauciones. Para prevenir los ataques de reentrada, se recomienda que se utilice el patrón de [\*checks-effects-interactions](https://solidity.readthedocs.io/en/develop/security-considerations.html?highlight=check%20effects#use-the-checks-effects-interactions-pattern)\* así que hablemos un poco sobre esto.
+
+### Patrón comprobaciones-efectos-interacciones ([check-effects-interaction pattern](http://solidity.readthedocs.io/en/develop/security-considerations.html?highlight=check%20effects#use-the-checks-effects-interactions-pattern)).
+
+La mayoría de las funciones realizarán primero algunas comprobaciones (quién ha llamado a la función, si los argumentos están dentro del rango, si han enviado suficiente Ether, si la persona tiene tokens, etc.). Estas comprobaciones deben realizarse en primer lugar.
+
+Como segundo paso, si todas las comprobaciones se superan, se deben realizar los efectos a las variables de estado del contrato actual. La interacción con otros contratos debería ser el último paso de cualquier función.
+
+Algunos contratos retrasaban los efectos y esperaban a que las llamadas a funciones externas volvieran sin errores. Esto es a menudo un grave error debido al problema de reentrada que explicaremos más adelante.
+
+Nótese que, además, las llamadas a contratos conocidos pueden a su vez causar llamadas a contratos desconocidos, **por lo que probablemente sea mejor aplicar siempre este patrón.**
+
+### Maneja los errors en las llamadas externas
+
+Solidity ofrece métodos de llamada de bajo nivel que funcionan con direcciones sin procesar: `address.call()`, `address.callcode()`, `address.delegatecall()` y `address.send()`. **Estos métodos de bajo nivel nunca lanzan una excepción, pero devolverán `false` si la llamada encuentra una excepción.** Por otro lado, las llamadas a contratos (por ejemplo, `ExternalContract.doSomething()`) propagarán automáticamente un error (por ejemplo, `ExternalContract.doSomething()` también fallará si `doSomething()` falla).
+
+Si decides utilizar los métodos de llamada de bajo nivel, asegúrate de manejar la posibilidad de que la llamada falle, comprobando el valor de retorno. **Recuerda: si puede fallar, lo hará.**
+
+```tsx
+// Mal
+someAddress.send(55);
+someAddress.call.value(55)(""); // esto es doblemente peligroso, ya que reenviará todo el gas restante y no comprueba el resultado
+someAddress.call.value(100)(bytes4(sha3("deposit()"))); // si el depósito lanza una excepción, el call() sin procesar sólo devolverá false y la transacción NO se revertirá
+
+// Bien
+(bool success, ) = someAddress.call.value(55)("");
+if(!success) {
+  // maneja el error
+}
+
+ExternalContract(someAddress).deposit.value(100)();
+```
+
+Veáse [SWC-104](https://swcregistry.io/docs/SWC-104) (_Unchecked Call Return Value_).
+
+### Prefiere la extracción frente al envío en llamadas externas.
+
+Las llamadas externas pueden fallar accidental o deliberadamente. Para minimizar el daño causado por estos fallos, a menudo es mejor aislar cada llamada externa en su propia transacción, que puede ser iniciada por el receptor. Esto es especialmente importante en el caso de los pagos, en los que es mejor dejar que los usuarios retiren fondos en lugar de enviarlos automáticamente (esto también reduce la posibilidad de problemas con el límite de gas). **Evita combinar varias transferencias de ether en una sola transacción.**
+
+Veamos el siguiente ejemplo:
+
+```tsx
+// Mal
+contract auction {
+    address highestBidder;
+    uint highestBid;
+
+    function bid() payable {
+        require(msg.value >= highestBid);
+
+        if (highestBidder != address(0)) {
+            (bool success, ) = highestBidder.call.value(highestBid)("");
+            // Imagina que `highestBidder` es un contrato que en su función `receive()`
+            // siempre revierte. Si esto ocurre, nadie más podrá hacer `bid()`
+            // y el actor malisioso habrá ganado la subasta sin mayor esfuerzo
+            require(success);
+        }
+
+       highestBidder = msg.sender;
+       highestBid = msg.value;
+    }
+}
+
+// Bien
+contract auction {
+    address highestBidder;
+    uint highestBid;
+    mapping(address => uint) refunds;
+
+    function bid() payable external {
+        require(msg.value >= highestBid);
+
+        if (highestBidder != address(0)) {
+            refunds[highestBidder] += highestBid;
+            // es mejor llevar la cuenta de lo que puede retirar cada cuenta y permitir
+            // que cada usuario retire los fondos cuando quiera (`withdrawRefund()`)
+            // Recuerda: UNA TRANSFERENCIA POR TRANSACCIÓN
+        }
+
+        highestBidder = msg.sender;
+        highestBid = msg.value;
+    }
+
+    function withdrawRefund() external {
+        uint refund = refunds[msg.sender];
+        refunds[msg.sender] = 0;
+        (bool success, ) = msg.sender.call.value(refund)("");
+        require(success);
+    }
+}
+```
+
+Véase [SWC-128](https://swcregistry.io/docs/SWC-128) (_DoS With Block Gas Limit_).
+
+### No delegues llamadas (delegatecall) a contratos que no sean de confianza
+
+La función delegatecall se utiliza para llamar a funciones de otros contratos como si fueran del contrato que las llama. De este modo, el llamante puede cambiar el estado de la dirección que llama. Esto puede ser inseguro. El siguiente ejemplo muestra cómo el uso de delegatecall puede llevar a la destrucción del contrato y a la pérdida de su balance.
+
+```tsx
+contract Destructor {
+    function doWork() external {
+        selfdestruct(0);
+    }
+}
+
+contract Worker {
+    function doWork(address _internalWorker) public {
+        // peligro!
+      _internalWorker.delegatecall(bytes4(keccak256("doWork()")));
+    }
+}
+```
+
+Si se llama a `Worker.doWork()` con la dirección del contrato `Destructor` desplegado como argumento, el contrato Worker se autodestruirá. **Delegue la ejecución sólo a contratos de confianza, y nunca a una dirección proporcionada por el usuario.**
+
+Veáse [SWC-112](https://swcregistry.io/docs/SWC-112) (_Delegatecall to Untrusted Callee_).
+
+<aside>
+  ❗❗ **No asumas que los contratos se crean con un balance de cero.** Un
+  atacante puede enviar ether a la dirección de un contrato antes de que se
+  cree, por lo que no debes asumir que su balance inicial es cero. Consulta la
+  [issue
+  61](https://github.com/ConsenSys/smart-contract-best-practices/issues/61) para
+  más detalles.
+</aside>
