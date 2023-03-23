@@ -22,6 +22,13 @@ export default function BuiltByMe() {
         />
 
         <ProjectCard
+          imageUrl="/images/dotlabs-registration.png"
+          title="dotlabs() Registration system"
+          description="A Solidity Smart Contract + React UI to register your interest in dotlabs() events."
+          link="https://dotlabs-workshops-calendar.vercel.app/"
+        />
+
+        <ProjectCard
           imageUrl="/images/alianza-juridica.png"
           title="Alianza Juridica S.A.S"
           description="Web page built for a law firm in Medellin, Colombia. Built with Next.js and Tailwind."
