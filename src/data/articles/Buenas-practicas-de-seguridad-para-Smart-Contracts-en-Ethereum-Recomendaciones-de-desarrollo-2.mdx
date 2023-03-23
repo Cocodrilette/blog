@@ -1,0 +1,86 @@
+---
+title: Buenas practicas de seguridad para Smart Contracts en Ethereum. Recomendaciones de desarrollo II.
+description: En este articulo exploraremos las vulnerabilidades relacionadas con el envío forzado de Ether, hablaremos acerca de la publicidad de la información en blockchain, sobre porque no debemos asumir una posición de confianza en ningún escenario y sobre algunos problemas relacionados con los números enteros con signo.
+publishedAt: 2023/03/22
+tags:
+  - Solidity
+  - Ethereum
+  - EVM
+  - Smart Contract
+  - Seguridad
+  - Buenas prácticas
+---
+
+## Envio forzado de Ether
+
+**En Ethereum, existen formas de forzar el envío de Ether a una dirección cualquiera, sin autorización y sin posibilidades de evitarlo.** Ten cuidado de depender estrictamente del balance global de tu contrato para controlar aspectos relacionados con la logica de tu negocio, un agente malisioso puede enviar forzozamente Ether a tu contrato y no lo podrás evitar nisquiera con un `revert()` en tu `fallback()` o en tu `receive()`.
+
+El atacante puede hacer esto creando un contrato, financiándolo con 1 wei e invocando `selfdestruct (victimAddress)`. Cuando esto ocurra no se invocará ningún código en `victimAddress`, por lo que no se podrá prevenir.
+
+Además, dado que las direcciones de los contrato se pueden predecir, es posible enviar ether a una dirección antes de que el contrato sea desplegado como lo explicamos en el articulo anterior ([issue 61](https://github.com/ConsenSys/smart-contract-best-practices/issues/61)).
+
+Veáse [SWC-132](https://swcregistry.io/docs/SWC-132) (_Unexpected Ether balance_).
+
+Sin embargo, ante este escenario tan desalentador, quizá, existe una forma de resolver este problema. Si la lógica de tu negocio o de tu sistema depende del balance de tu contrato no confies en la variable global `balance` que te provee la EVM sobre el estado de contrato. Lo mejor es crear una varible de estado que lleve la cuenta de los enviós de Ether a travéz de una función creada por ti . Veamos un ejemplo:
+
+```tsx
+// SPDX-License-Identifier: MIT
+pragma solidity 0.8.17;
+
+contract Bank {
+	uint256 public balance;
+
+	function addFunds() public payable returns (bool) {
+		balance += msg.value;
+	}
+
+}
+```
+
+De esta forma tu tienes el control total sobre el balance que usarás para administrar tu sistema.
+
+# Manteniendo la información oculta
+
+Muchas aplicaciones requieren que los datos enviados sean privados hasta cierto punto para que funcionen. Los juegos (por ejemplo, piedra-papel-tijera) y los mecanismos de subasta (por ejemplo, subastas de Vickrey con oferta sellada (las subastas de tipo Vickrey son aquellas en las que los postores hacen ofertas sin conocer las ofertas de los demás)) son dos ejemplos paradigmáticos. Si estás construyendo una aplicación donde la privacidad es importante, asegúrate de evitar exigir a los usuarios que publiquen información demasiado pronto. La mejor estrategia es utilizar esquemas de compromiso (_[commitment schemes](https://en.wikipedia.org/wiki/Commitment_scheme)_) con fases separadas: primero comprometerse utilizando el hash de los valores que se envíen y, en una fase posterior, revelar los valores.
+
+Sin embargo, debes tener cuidado para asegurarte de que el valor almacenado como hash no sea reconocible (y por lo tanto, no se pueda desenmascarar), ya que esto anularía el segundo propósito del hashing: evitar la revelación de dichos valores. Por ejemplo:
+
+Supongamos que un contrato inteligente permite a 2 jugadores jugar _piedra, papel o tijera_, y utiliza este esquema de compromiso-revelación: ambos jugadores deben enviar un hash de su movimiento antes de que cualquiera de ellos envíe la última transacción (que termina el juego). El resultado de la función `keccak256(piedra)` es `5efc69eb65398dda10fb098235896a16d2928e01092da80cc2a9c4b92c2caeea`. Si estuvieras jugando y vieras que tu oponente se está comprometiendo con esto y sabes que las tres opciones posibles son piedra, papel o tijera, ¿no te diría esto exactamente qué movimiento ha elegido tu oponente luego de tres pruebas? Una implementación más segura sería hacer hash no solo del nombre del movimiento, sino también, por ejemplo, un número cualquiera proporcionado por el usuario elegido por el usuario. Eso haría que el hash resultante no sea fácilmente reconocible, incrementando la cantidad de pruebas necesarias a una decena de billones (con suerte) antes de encontrar el valor suscrito.
+
+Ejemplos:
+
+- En piedra, papel o tijera, haz que ambos jugadores envíen un hash de su movimiento previsto primero, luego puedes hacer que ambos jugadores envíen su movimiento; si el movimiento enviado no coincide con el hash, no lo aceptes.
+- En una subasta, requerir que los jugadores envíen un hash con el valor de su oferta en una fase inicial (junto con un depósito mayor que su valor de oferta) y luego envíen su valor de oferta de subasta en la segunda fase. Nótese que esta técnica requiere que los usuarios tengan un balance superior para poder participar. Lo puedes ajustar para que sea un valor aleatorio, pero podrían surgir otros problemas.
+- Al desarrollar una aplicación que depende de la generación de números aleatorios, el orden siempre debería ser (1) los jugadores envían movimientos, (2) se genera un número aleatorio, (3) se paga a los ganadores.
+
+El método por el cual se generan los números aleatorios Ethereum es en sí mismo un área activa de investigación; las mejores soluciones actualmente son los encabezados de bloque de Bitcoin (verificados a través de [http://btcrelay.org](http://btcrelay.org/)), esquemas de compromiso de hash-revelación (es decir, una parte genera un número, publica su hash para "comprometerse" con el valor y luego revela el valor más tarde), [RANDAO](https://github.com/randao/randao) (más sobre RANDAO pronto 👀) y la más interesante para mí, las [_Verifiable Random Functions_ creadas por el equipo de Chainlink](https://docs.chain.link/vrf/v2/introduction/). **Como Ethereum es un protocolo determinista, ninguna variable dentro del protocolo podría usarse como número aleatorio impredecible.** Incluso, los mineros tienen cierto control sobre el valor de la variable global "block.blockhash()".
+
+## ¿Qué sucede cuando alguien actúa de mala fe?
+
+No hagas que los procesos de reembolso o reclamación dependan de que una parte realice una acción particular sin proveer otra forma de obtener los fondos. Por ejemplo, en un juego de piedra, papel y tijeras, un error común es no hacer un pago hasta que ambos jugadores envíen sus movimientos; puede pasar que un jugador malintencionado pueda querer "dañar" al otro simplemente no enviando su movimiento. De hecho, si un jugador ve el movimiento revelado del otro jugador y determina que perdió, no tiene ninguna razón para enviar su propio movimiento en absoluto. Cuando estas situaciones son un problema, (1) crea una forma de evitar que los usuarios no participen, quizás a través de un límite de tiempo, y (2) otra opción es repartir incentivos para que los participantes envíen información en todas las situaciones en las que se supone que deben hacerlo.
+
+## Negación de enteros con signo
+
+Solidity proporciona varios tipos para trabajar con enteros con signo. Al igual que en la mayoría de los lenguajes de programación, en Solidity un entero con signo de `N` bits puede representar valores desde `-2^(N-1)` hasta `2^(N-1)-1`. Esto significa que no hay un equivalente positivo para `MIN_INT`. La negación se implementa encontrando el complemento a dos de un número, por lo que la negación del menor número negativo [resultará en el mismo número](https://en.wikipedia.org/wiki/Two%27s_complement#Most_negative_number) (sobre este problema volveremos más adelante).
+
+Esto es cierto para todos los tipos de enteros con signo en Solidity (`int8`, `int16`, ..., `int256`).
+
+```tsx
+contract Negation {
+    function negate8(int8 _i) public pure returns(int8) {
+        return -_i;
+    }
+
+    function negate16(int16 _i) public pure returns(int16) {
+        return -_i;
+    }
+
+    int8 public a = negate8(-128); // -128
+    int16 public b = negate16(-128); // 128
+    int16 public c = negate16(-32768); // -32768
+}
+```
+
+Una forma de manejar esto es verificar el valor de una variable antes de la negación y lanzar una excepción si es igual a `MIN_INT`. La opción que se propone es utilizar un tipo de datos con mayor capacidad, como `int32` en lugar de `int16`, para asegurarse de que nunca se alcance el número negativo más pequeño (algo así como hacer la negación del menor numero negativo en el rango de `int16` pero haciendo la negacion sobre un espacio en el rango de `int32`.
+
+Un problema similar con los tipos `int` ocurre cuando `MIN_INT` se multiplica o divide por `-1`.
