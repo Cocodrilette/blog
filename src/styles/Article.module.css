@@ -24,6 +24,15 @@
   gap: 0.5rem;
 }
 
+#postContent ol li {
+  margin-left: 0.5rem;
+  list-style: decimal;
+}
+
+#postContent ol li li {
+  margin-left: 0.7rem;
+  list-style: lower-alpha;
+}
 
 #postContent>ul {
   display: flex;
