@@ -18,12 +18,12 @@ tags:
 
 ## Tornado Cash
 
-Tornado Cash es (o era) un protocolo financiero descentralizado (DeFi) que permite a los usuarios realizar transacciones anónimas en Ethereum.
+Tornado Cash es (o era) un protocolo financiero descentralizado (DeFi) que permitía a los usuarios realizar transacciones anónimas en Ethereum.
 El protocolo de Tornado Cash consistía en un contrato llamado "mixer", usado para crear transacciones anónimas. El mixer debía dividir el ETH depositado por un usuario
-en partes más pequeñas que luego eran mezcladas con los depositos de los demás usuarios. Una vez finalizada la mezcla, el usuario podía retir sus Ethers anonimizados.
+en partes más pequeñas que luego eran mezcladas con los depositos de los demás usuarios. Una vez finalizada la mezcla, el usuario podía retirar sus Ethers anonimizados.
 
 El protocolo tambien tenía una función llamada "shielding" que permitía a los usuarios convertir sus Ethers en una versión privada llamada "zETH". Hablamos todo el
-tiempo en pasado porque al parecer el protocolo ya no está disponible para nadie. Su página web fue removida y todos sus repositorios de GitHub, archivados.
+tiempo en pasado porque al parecer el protocolo ya no está disponible para nadie. Su página web fue removida y todos sus repositorios de GitHub fueron archivados.
 
 ![Web de Tornado Cash](https://gateway.pinata.cloud/ipfs/QmVT5wxGZKHccJqkhWzim2iw3jvBUyRrwAXSLSttvxbMvz)
 
@@ -38,7 +38,7 @@ El pasado 20 de mayo [@samczsun.com](https://twitter.com/samczsun) publicaba not
 El atacante obtuvo control total sobre la governanza de Tornado Cash, permitiendole:
 
 - Retirar todos los votos bloqueados.
-- Retirar todos los token de la governanza.
+- Retirar todos los tokens de la governanza.
 - Bloquear el Router.
 - Vaciar los depositos de cada usuario.
 
@@ -47,10 +47,10 @@ El atacante obtuvo control total sobre la governanza de Tornado Cash, permitiend
 Según [@samczsun.com](https://twitter.com/samczsun) cuando el atacante creó su propuesta maliciosa, afirmó haber utilizado la misma lógica
 que una propuesta anterior que había sido aprobada. Sin embargo, eso no era exactamente cierto, porque había una función adicional.
 
-Una vez que la propuesta era aprobada por los votantes, el atacante simplemente utilizaba la función `emergencyStop` para actualizar la lógica
+Una vez que la propuesta fue aprobada por los votantes, el atacante simplemente utilizó la función `emergencyStop` para actualizar la lógica
 de la propuesta y concederse a sí mismo los votos fraudulentos.
 
-Ahora que el atacante tiene todos los votos, pueden hacer lo que quiera. En este caso, simplemente retiró 10.000 votos como TORN y los vendió todos.
+Ahora que el atacante tenía el poder sobre todos los votos, podía hacer lo que quisiera. En este caso, simplemente retiró 10.000 votos como TORN y los vendió todos.
 
 **[Link al hilo](https://twitter.com/samczsun/status/1660012956632104960?s=20)**
 
@@ -67,7 +67,7 @@ contrato estará definida en función del _sender_ (la dirección que ejecuta la
 new_address = hash(sender, nonce);
 ```
 
-### create2
+#### CREATE2
 
 La otra forma es a travez del _CREATE2 opcode_. La diferencia con la primera forma es que a travez de este método, podemos predecir la dirección en la que será
 desplegado el contrato, incluso si nunca lo hacemos.
@@ -96,9 +96,9 @@ conozcan. Este es el concepto clave detrás de los despliegues [contrafactuales]
 
 ## ¿Cómo se ve esto en Solidity?
 
-Se que si llegaste hasta aquí es porque quires saber como se ve toda esta teoría en la practica. ¡Asi que vamos con eso!
+Sé que si llegaste hasta aquí es porque quieres saber como se ve toda esta teoría en la practica. ¡Asi que vamos con eso!
 
-El primer lugar el atacante debía desplegar una `proposal` que debía ser revisada y aprovaba por la governanza de Tornado Cash.
+El primer lugar el atacante debía desplegar una `Proposal` que debía ser revisada y aprovaba por la governanza de Tornado Cash.
 
 ![Envía la propuesta y es aceptada](https://gateway.pinata.cloud/ipfs/QmZmsXZUhxea2XfgfqWzkpr4tDkduSkxub4Dhh8kLTk5Yf?_gl=1*1pg9hhh*rs_ga*NDMwNTE0ODA1LjE2ODUzMTI5OTI.*rs_ga_5RMPXG14TE*MTY4NTMxNzY3NC4yLjAuMTY4NTMxNzY3NC42MC4wLjA.)
 
@@ -127,7 +127,7 @@ address = ultimos 20 bytes de sha3(rlp(sender,nonce))
 
 De forma que si el nonce cambía, la dirección cambia. **Si existiera alguna forma de reiniciar el valor del _nonce_ podríamos desplegar otro contrato en la misma dirección.** Y existe una forma, ¡veamos cómo!
 
-Imaginemos el mismo proceso que antes, pero esta vez con una diferencia. Antes de create el contrato malicioso, el atacante "borra" el contrato `Deployer` a travez de la función `selfdestruct`.
+Imaginemos el mismo proceso que antes, pero esta vez con una diferencia. Antes de crear el contrato malicioso, el atacante "borra" el contrato `Deployer` a travez de la función `selfdestruct`.
 Ahora, el atacante puede volver a desplegar un contrato en la dirección que antes ocupaba el contrato eliminado porque lo hizo utilizando el _CREATE2 opcode_. Este nuevo contrato, tendrá
 nuevamente un _nonce_ con su valor inicial: 0. Cuando el atacante despliegue un nuevo contrato a travez de este nuevo `Deployer`, estará en la misma dirección del `Proposal` que fue "borrado" anteriomente.
 
