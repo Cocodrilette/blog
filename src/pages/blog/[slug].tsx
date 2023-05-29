@@ -13,8 +13,7 @@ import Container5xl from "@app/components/commons/Container5xl";
 import Layout from "@app/components/Layout";
 import PostTitle from "@app/components/blog/PostTitle";
 import TextSmallAndDimmed from "@app/components/text/TextSmallAndDimmed";
-import InnerPostH2 from "../../components/blog/InnerPostH2";
-import InnerPostH3 from "../../components/blog/InnerPostH3";
+
 import styles from "@app/styles/Article.module.css";
 
 export default function Blog({ article: { source, frontmatter } }: any) {
@@ -39,10 +38,7 @@ export default function Blog({ article: { source, frontmatter } }: any) {
             id={styles.postContent}
             className="flex flex-col gap-5 text-slate-200 mb-20 md:bg-gray-800/70 md:p-10 md:border md:border-dimmedPink"
           >
-            <MDXRemote
-              {...source}
-              components={{ Image, InnerPostH2, InnerPostH3 }}
-            />
+            <MDXRemote {...source} />
           </div>
         </div>
       </Container5xl>

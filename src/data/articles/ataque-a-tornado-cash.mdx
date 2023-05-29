@@ -1,0 +1,142 @@
+---
+title: El ataque a Tornado Cash y cómo desplegar diferentes contratos en la misma dirección.
+description:
+  Muchos dias y algunas promesas han pasado desde la ultima publicación.
+  Pero volvemos estudiando el ataque que sufrió Tornado Cash hace algunos dias,
+  mientras aprendemos algunas cosas interesantes sobre Solidity y la EVM, como por ejemplo,
+  desplegar dos contratos diferentes en la misma dirección. Si quires saber como hacerlo, ¡vamos a verlo!
+publishedAt: 2023/05/28
+tags:
+  - Solidity
+  - Ethereum
+  - EVM
+  - Smart Contract
+  - Seguridad
+  - create2
+  - delegatecall
+---
+
+## Tornado Cash
+
+Tornado Cash es (o era) un protocolo financiero descentralizado (DeFi) que permite a los usuarios realizar transacciones anónimas en Ethereum.
+El protocolo de Tornado Cash consistía en un contrato llamado "mixer", usado para crear transacciones anónimas. El mixer debía dividir el ETH depositado por un usuario
+en partes más pequeñas que luego eran mezcladas con los depositos de los demás usuarios. Una vez finalizada la mezcla, el usuario podía retir sus Ethers anonimizados.
+
+El protocolo tambien tenía una función llamada "shielding" que permitía a los usuarios convertir sus Ethers en una versión privada llamada "zETH". Hablamos todo el
+tiempo en pasado porque al parecer el protocolo ya no está disponible para nadie. Su página web fue removida y todos sus repositorios de GitHub, archivados.
+
+![Web de Tornado Cash](https://gateway.pinata.cloud/ipfs/QmVT5wxGZKHccJqkhWzim2iw3jvBUyRrwAXSLSttvxbMvz)
+
+![GitHub de Tornado Cash](https://gateway.pinata.cloud/ipfs/QmYRKq4NvRq25Ku3x2aY2iZuL5MdHjfzwM8Ck9LEwWuQyX?_gl=1*14dascm*rs_ga*NDMwNTE0ODA1LjE2ODUzMTI5OTI.*rs_ga_5RMPXG14TE*MTY4NTMxMjk5Mi4xLjEuMTY4NTMxNDA2Ny4yLjAuMA..)
+
+## El ataque
+
+El pasado 20 de mayo [@samczsun.com](https://twitter.com/samczsun) publicaba noticias sobre el ataque a Tornado Cash.
+
+![Tweet de @samczsun.com](https://gateway.pinata.cloud/ipfs/QmdiqvUhHpuZG24s4xsnt3y29ADdGvbMGCey64YL9JcrfQ?_gl=1*1d3jxs4*rs_ga*NDMwNTE0ODA1LjE2ODUzMTI5OTI.*rs_ga_5RMPXG14TE*MTY4NTMxMjk5Mi4xLjEuMTY4NTMxNDkzMy42MC4wLjA.)
+
+El atacante obtuvo control total sobre la governanza de Tornado Cash, permitiendole:
+
+- Retirar todos los votos bloqueados.
+- Retirar todos los token de la governanza.
+- Bloquear el Router.
+- Vaciar los depositos de cada usuario.
+
+### ¿Cómo ocurrio todo?
+
+Según [@samczsun.com](https://twitter.com/samczsun) cuando el atacante creó su propuesta maliciosa, afirmó haber utilizado la misma lógica
+que una propuesta anterior que había sido aprobada. Sin embargo, eso no era exactamente cierto, porque había una función adicional.
+
+Una vez que la propuesta era aprobada por los votantes, el atacante simplemente utilizaba la función `emergencyStop` para actualizar la lógica
+de la propuesta y concederse a sí mismo los votos fraudulentos.
+
+Ahora que el atacante tiene todos los votos, pueden hacer lo que quiera. En este caso, simplemente retiró 10.000 votos como TORN y los vendió todos.
+
+**[Link al hilo](https://twitter.com/samczsun/status/1660012956632104960?s=20)**
+
+## _Diving into the hack_ 🔎
+
+### Creando nuevos contratos
+
+#### CREATE
+
+En Ethereum, tenemos dos formas de crear un contrato. La primera forma, y quiza las más usada es atravez del _CREATE opcode_. De esta forma, la dirección del
+contrato estará definida en función del _sender_ (la dirección que ejecuta la creación) y el nonce de esa misma cuenta.
+
+```javascript
+new_address = hash(sender, nonce);
+```
+
+### create2
+
+La otra forma es a travez del _CREATE2 opcode_. La diferencia con la primera forma es que a travez de este método, podemos predecir la dirección en la que será
+desplegado el contrato, incluso si nunca lo hacemos.
+
+La idea detrás de este _opcode_ es hacer que la dirección resultante sea independiente de eventos futuros. Independientemente de lo que pueda ocurrir en la cadena,
+siempre será posible desplegar el contrato en la dirección precalculada.
+
+En este caso, la forma de computar la dirección del nuevo contrato es un poco diferente. Esta vez, la dirección se define en función de:
+
+- `0xFF`, una constante para prevenir colisiones con el _CREATE opcode_.
+- La dirección del _sender_.
+- Un `salt` (un valor arbitrario proporcionado por el remitente en bytes).
+- El bytecode del contrato a desplegar.
+
+```javascript
+new_address = hash(0xff, sender, salt, bytecode);
+```
+
+El _CREATE2 opcode_ garantiza que si en algun momento el _sender_ despliega el bytecode de un contrato utilizando _CREATE2_ y el mismo `salt`, entonces la
+nueva dirección siempre será `new_address`.
+
+Dado que el bytecode se incluye en este cálculo, otros agentes pueden confiar en que, si alguna vez se despliega un contrato en `new_address`, será uno que
+conozcan. Este es el concepto clave detrás de los despliegues [contrafactuales](https://es.wikipedia.org/wiki/Contrafactual).
+
+**Mas detalles en: [Deploying Smart Contracts Using CREATE2](https://docs.openzeppelin.com/cli/2.8/deploying-with-create2)**
+
+## ¿Cómo se ve esto en Solidity?
+
+Se que si llegaste hasta aquí es porque quires saber como se ve toda esta teoría en la practica. ¡Asi que vamos con eso!
+
+El primer lugar el atacante debía desplegar una `proposal` que debía ser revisada y aprovaba por la governanza de Tornado Cash.
+
+![Envía la propuesta y es aceptada](https://gateway.pinata.cloud/ipfs/QmZmsXZUhxea2XfgfqWzkpr4tDkduSkxub4Dhh8kLTk5Yf?_gl=1*1pg9hhh*rs_ga*NDMwNTE0ODA1LjE2ODUzMTI5OTI.*rs_ga_5RMPXG14TE*MTY4NTMxNzY3NC4yLjAuMTY4NTMxNzY3NC42MC4wLjA.)
+
+Luego, el atacante "eliminó" el contrato en esa dirección usando la función `selfdestruct`.
+
+![Elimina el contrato](https://gateway.pinata.cloud/ipfs/QmcNpnkqibRgwKevCLz6aPtKKSXxJHNav2Uy7nh4oCfFqU?_gl=1*1rq9yv2*rs_ga*NDMwNTE0ODA1LjE2ODUzMTI5OTI.*rs_ga_5RMPXG14TE*MTY4NTMxNzY3NC4yLjEuMTY4NTMxODAyNy42MC4wLjA.)
+
+Una vez eliminado el contrato de esa dirección, el atacante podía desplegar un nuevo contrato, en el que Tornado Cash confiaría, pero esta vez, con código malicioso que le permitiría
+tomar el control del protocolo ejecutando la propuesta, pero con un resultado inesperado 🥲.
+
+![Despliega el contrato malicioso en la misma dirección](https://gateway.pinata.cloud/ipfs/QmdBJCPLwPCPtoL2D1X5NTa5SsBgdEsEAQa2ttTK1YkZMw?_gl=1*1k6j0wa*rs_ga*NDMwNTE0ODA1LjE2ODUzMTI5OTI.*rs_ga_5RMPXG14TE*MTY4NTMxNzY3NC4yLjEuMTY4NTMxODM4NC42MC4wLjA.)
+
+### ¿Cómo desplegar diferentes contratos en la misma dirección?
+
+Imaginemos que el atacante despliega un contrato llamado `DeployerDeployer` y que a travez del _CREATE2 opcode_ despliega un contrato llamado `Deployer` que a su vez, depliega
+un contrato llamado `Proposal` que será enviado a la governanza de Tornado Cash para su revisión y aprobación. Si este mismo contrato intentara desplegar un nuevo contrato
+para suplantar el anterior no podría hacerlo porque el `nonce` de su cuenta ya cambío, por lo tanto, la nueva dirección será diferente a la anterior.
+
+![Despliegue mediante CREATE](https://gateway.pinata.cloud/ipfs/QmSKcaDSmktBDcRzbA3yH5YxU5pYsbNws5K4LFCvdEyf96?_gl=1*avo7w3*rs_ga*NDMwNTE0ODA1LjE2ODUzMTI5OTI.*rs_ga_5RMPXG14TE*MTY4NTMxNzY3NC4yLjEuMTY4NTMxOTA0OC42MC4wLjA.)
+
+Volvamos sobre la forma en la que se crean la direcciones en Ethereum. Cuando usamos el _CREATE opcode_ la dirección será:
+
+```
+address = ultimos 20 bytes de sha3(rlp(sender,nonce))
+```
+
+De forma que si el nonce cambía, la dirección cambia. **Si existiera alguna forma de reiniciar el valor del _nonce_ podríamos desplegar otro contrato en la misma dirección.** Y existe una forma, ¡veamos cómo!
+
+Imaginemos el mismo proceso que antes, pero esta vez con una diferencia. Antes de create el contrato malicioso, el atacante "borra" el contrato `Deployer` a travez de la función `selfdestruct`.
+Ahora, el atacante puede volver a desplegar un contrato en la dirección que antes ocupaba el contrato eliminado porque lo hizo utilizando el _CREATE2 opcode_. Este nuevo contrato, tendrá
+nuevamente un _nonce_ con su valor inicial: 0. Cuando el atacante despliegue un nuevo contrato a travez de este nuevo `Deployer`, estará en la misma dirección del `Proposal` que fue "borrado" anteriomente.
+
+De esta forma, el atacante ahora puede ejecutar cualquier código que desee cuando Tornado Cash ejecute la propuesta porque el protocolo confía en que el código en esa dirección no ha cambiado 😬.
+
+![Despligue, eliminación, redespliegue](https://gateway.pinata.cloud/ipfs/QmSWSGttHA784F6ognepAMfcwqtQJMRTbNnQjwuPnX3etC?_gl=1*1li2aij*rs_ga*NDMwNTE0ODA1LjE2ODUzMTI5OTI.*rs_ga_5RMPXG14TE*MTY4NTMxNzY3NC4yLjEuMTY4NTMxOTkzOS42MC4wLjA.)
+
+<aside>
+  Si quieres saber como se vería esto en Solidity, te invito a la sesión del
+  próximo sábado 3 de junio de 2023 en [dotlabs()](https://dotlabs.academy),
+  donde replicaremos este ataque para conocerlo a profundidad.
+</aside>
