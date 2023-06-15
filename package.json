@@ -4,6 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "GENERATE_SOURCEMAP=false && next dev",
+    "preinstall": "npx only-allow pnpm",
     "build": "next build",
     "start": "next start",
     "lint": "next lint"
