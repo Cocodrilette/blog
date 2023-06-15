@@ -1,11 +1,16 @@
-import Layout from "@app/components/Layout";
-import PageTitle from "@app/components/text/MainPageTitle";
-import Container5xl from "@app/components/commons/Container5xl";
-import { getAllArticles } from "@app/lib/mdxProcessor";
-import ArticleCard from "@app/components/blog/ArticleCard";
+import Layout from '@app/components/Layout';
+import PageTitle from '@app/components/text/MainPageTitle';
+import Container5xl from '@app/components/commons/Container5xl';
+import { getAllArticles } from '@app/lib/mdxProcessor';
+import ArticleCard from '@app/components/blog/ArticleCard';
 
 export default function PostsPages(props: any) {
   const articles = props.allArticles
+    .sort((a: any, b: any) => {
+      return (
+        new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime()
+      );
+    })
     .map((frontmatter: any, index: number) => {
       return (
         <ArticleCard
@@ -18,17 +23,16 @@ export default function PostsPages(props: any) {
           tags={frontmatter.tags}
         />
       );
-    })
-    .reverse();
+    });
 
   return (
     <Layout
-      headTitle="Cocodrilette - Blog"
-      headDescription="Cocodrilette blog posts."
+      headTitle='Cocodrilette - Blog'
+      headDescription='Cocodrilette blog posts.'
     >
       <Container5xl>
-        <PageTitle content="Blog" />
-        <div className="flex flex-col mt-10 mb-20 gap-5">{articles}</div>
+        <PageTitle content='Blog' />
+        <div className='flex flex-col mt-10 mb-20 gap-5'>{articles}</div>
       </Container5xl>
     </Layout>
   );
@@ -37,14 +41,7 @@ export default function PostsPages(props: any) {
 export async function getStaticProps() {
   const articles = await getAllArticles();
 
-  articles
-    .map((article) => article.data)
-    .sort((a, b) => {
-      if (a.data.publishedAt > b.data.publishedAt) return 1;
-      if (a.data.publishedAt < b.data.publishedAt) return -1;
-
-      return 0;
-    });
+  articles.map((article) => article.data);
 
   return { props: { allArticles: articles } };
 }
