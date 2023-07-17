@@ -1,0 +1,424 @@
+---
+title: Vyper. Part 1.
+description:
+  A few days ago I was invited to use Vyper in a Avanlanche Hackathon. I had never used it before,
+  so I decided to write a series of articles about it. I will be using the official docs and Hardhat to help
+  me with the development. I will be writing about the basics of the language, the differences with Solidity, and
+  the tools that I will be using to develop. Also I practice my writing skills in English.
+publishedAt: 2023/07/16
+tags:
+  - Smart Contracts
+  - Vyper
+  - Hardhat
+  - EVM
+---
+
+## Intro
+
+The first thing I think when I hear about [Vyper](https://docs.vyperlang.org/en/stable/index.html) is that it is a language that is very similar to Solidity, but with some differences.
+So I decided to use Hardhat as my development enviroment. I open my browser and type something like `hardhat vyper`, then the magic happens. I found a plugin that allows me to use Vyper in Hardhat. I proceed
+to installed it and I am ready to start coding.
+
+```bash
+# 1. Install Hardhat
+pnpm i hardhat
+
+# 2. Install Vyper plugin
+pnpm i @nomiclabs/hardhat-vyper
+```
+
+Now we added the plugin to our `hardhat.config.js` file.
+
+```typescript
+import { HardhatUserConfig } from "hardhat/config";
+import "@nomicfoundation/hardhat-toolbox";
+import "@nomiclabs/hardhat-vyper";
+
+const config: HardhatUserConfig = {
+  solidity: "0.8.19",
+};
+
+export default config;
+```
+
+## Hello Vyper!
+
+I feels confortable with Python so a langueje the called itself a "contract-oriented, pythonic programming
+language that targets the Ethereum Virtual Machine (EVM)" sounds like a good start. The first thing I will
+do, is to "translate" the `Lock.sol` contract from the Hardhat default project to Vyper.
+
+If you don't know what the `Lock.sol` contract does, it is a contract that allows you to lock some tokens
+for a period of time. The contract has a `lock` function that allows you to lock some tokens for a period of
+time and a `withdraw` function that allows you to withdraw the tokens after the lock period has passed.
+
+```typescript
+// SPDX-License-Identifier: UNLICENSED
+pragma solidity ^0.8.9;
+
+// Uncomment this line to use console.log
+// import "hardhat/console.sol";
+
+contract Lock {
+    uint public unlockTime;
+    address payable public owner;
+
+    event Withdrawal(uint amount, uint when);
+
+    constructor(uint _unlockTime) payable {
+        require(
+            block.timestamp < _unlockTime,
+            "Unlock time should be in the future"
+        );
+
+        unlockTime = _unlockTime;
+        owner = payable(msg.sender);
+    }
+
+    function withdraw() public {
+        // Uncomment this line, and the import of "hardhat/console.sol", to print a log in your terminal
+        // console.log("Unlock time is %o and block timestamp is %o", unlockTime, block.timestamp);
+
+        require(block.timestamp >= unlockTime, "You can't withdraw yet");
+        require(msg.sender == owner, "You aren't the owner");
+
+        emit Withdrawal(address(this).balance, block.timestamp);
+
+        owner.transfer(address(this).balance);
+    }
+}
+```
+
+So i went to the Vyper docs and get some knowledge about the language.
+
+## Vyper basics
+
+The first thing that get my attention is this line here **Support for signed integers and decimal fixed point numbers**.
+But the really insteresting part is the large one...
+
+<blockquote>
+Following the principles and goals, Vyper does not provide the following features:
+
+- Modifiers: For example in Solidity you can define a function foo() mod1 \{ ... \}, where mod1 can be defined elsewhere in the code to include a check that is done before execution, a check that is done after execution, some state changes, or possibly other things. Vyper does not have this, because it makes it too easy to write misleading code. mod1 just looks too innocuous for something that could add arbitrary pre-conditions, post-conditions or state changes. Also, it encourages people to write code where the execution jumps around the file, harming auditability. The usual use case for a modifier is something that performs a single check before execution of a program; our recommendation is to simply inline these checks as asserts.
+
+- Class inheritance: Class inheritance requires people to jump between multiple files to understand what a program is doing, and requires people to understand the rules of precedence in case of conflicts (“Which class's function X is the one that's actually used?”). Hence, it makes code too complicated to understand which negatively impacts auditability.
+
+- Inline assembly: Adding inline assembly would make it no longer possible to search for a variable name in order to find all instances where that variable is read or modified.
+
+- Function overloading: This can cause lots of confusion on which function is called at any given time. Thus it's easier to write missleading code (foo("hello") logs “hello” but foo("hello", "world") steals your funds). Another problem with function overloading is that it makes the code much harder to search through as you have to keep track on which call refers to which function.
+
+- Operator overloading: Operator overloading makes writing misleading code possible. For example + could be overloaded so that it executes commands that are not visible at a first glance, such as sending funds the user did not want to send.
+
+- Recursive calling: Recursive calling makes it impossible to set an upper bound on gas limits, opening the door for gas limit attacks.
+
+- Infinite-length loops: Similar to recursive calling, infinite-length loops make it impossible to set an upper bound on gas limits, opening the door for gas limit attacks.
+
+- Binary fixed point: Decimal fixed point is better, because any decimal fixed point value written as a literal in code has an exact representation, whereas with binary fixed point approximations are often required (e.g. (0.2)10 = (0.001100110011…)2, which needs to be truncated), leading to unintuitive results, e.g. in Python 0.3 + 0.3 + 0.3 + 0.1 != 1.
+
+**Vyper does not strive to be a 100% replacement for everything that can be done in Solidity**; it will deliberately forbid things or make things harder if it deems fit to do so for the goal of increasing security.
+
+</blockquote>
+
+A movie and a launch later I writed this pythonic version of the Lock contract.
+
+```python
+# @version 0.3.9
+
+unlockTime: public(uint256)
+owner: public(address)
+
+event Withdrawal:
+  amount: uint256
+  when: uint256
+
+@external
+@payable
+def __init__(_unlockTime: uint256):
+  assert _unlockTime > block.timestamp, "Unlock time should be in the future"
+
+  self.unlockTime = _unlockTime
+  self.owner = msg.sender
+
+@external
+def withdraw():
+  sender: address = msg.sender
+
+  assert sender == self.owner, "You aren't the owner"
+  assert block.timestamp >= self.unlockTime, "You can't withdraw yet"
+
+  log Withdrawal(self.balance, block.timestamp)
+
+  send(sender, self.balance)
+```
+
+### Step by step
+
+The first thing I need to do is install the Vyper compiler and configure Hardhat to use it.
+
+```bash
+# 0. (optional) Create a virtual env
+python3 -m venv <name>
+
+# 1. Install Vyper
+pip install vyper
+```
+
+Then I need to add the Vyper compiler to my `hardhat.config.js` file.
+
+```typescript
+import { HardhatUserConfig } from "hardhat/config";
+import "@nomicfoundation/hardhat-toolbox";
+import "@nomiclabs/hardhat-vyper";
+
+const config: HardhatUserConfig = {
+  vyper: {
+    version: "0.3.9",
+  },
+};
+
+export default config;
+```
+
+I removed the `solidity` property because I will be using Vyper instead of Solidity 🤷‍♂️.
+
+Now I can compile my contract.
+
+```bash
+npx hardhat compile
+```
+
+### Undertanding the code.
+
+1. The Vyper's sources files have the `.vy` extension.
+2. So I crete a `Lock.vy` file and started to thinking about the `Lock.sol` contract.
+3. As you can notice, the first thing I did was to add the version of Vyper that I will be using.
+4. The main difference between the Solidity and Vyper version is that the Vyper version is more concise as it not need the `contract` declaration nor the braces (`{ ... }`).
+5. So the state variable are declare in the global scope of the file. As like in Solidity are pivate by default. So if we can to make them public we need to add the `public` keyword,
+   like in Solidity but with a function like syntaxt. This public function automatically create a getter function for the variable.
+
+```python
+...
+
+unlockTime: public(uint256)
+owner: public(address)
+
+...
+```
+
+6. Vyper also provide us with events to log data to the blockchain.
+
+```python
+...
+
+event Withdrawal:
+  amount: uint256
+  when: uint256
+
+...
+```
+
+7. In Vyper we do not have a `constructor` but a `__init__` function. This function is called when the contract is deployed just like the `constructor` in Solidity.
+
+```python
+...
+
+@external
+@payable
+def __init__(_unlockTime: uint256):
+  assert _unlockTime > block.timestamp, "Unlock time should be in the future"
+
+  self.unlockTime = _unlockTime
+  self.owner = msg.sender
+
+...
+
+```
+
+8. Here we can see what the docs said before. We have no modifiers, so we need to add the `@external` and `@payable` decorators to the function.
+   The `@external` decorator is used to mark a function as public and the `@payable` decorator is used to allows the function to receive ether.
+
+9. The `assert` function is used to check if a condition is true. If the condition is false, the transaction will be reverted, like the `require` function in Solidity.
+
+10. The `self` keyword is used to access the contract's state variables.
+
+11. Finally, we can access to the global chain variables like `block.timestamp` and `msg.sender` with a syntax barely different from Solidity. And we can log data to the blockchain with the `log` function.
+
+```python
+...
+
+@external
+def withdraw():
+  sender: address = msg.sender
+
+  assert sender == self.owner, "You aren't the owner"
+  assert block.timestamp >= self.unlockTime, "You can't withdraw yet"
+
+  log Withdrawal(self.balance, block.timestamp)
+
+  send(sender, self.balance)
+
+...
+```
+
+## Testing
+
+Now, how can I know if my contract works? I need to test it. So I create a `Lock.ts` file and used the exact same test that came with the Hardhat default project for the `Lock.sol` contract.
+
+```typescript
+import {
+  time,
+  loadFixture,
+} from "@nomicfoundation/hardhat-toolbox/network-helpers";
+import { anyValue } from "@nomicfoundation/hardhat-chai-matchers/withArgs";
+import { expect } from "chai";
+import { ethers } from "hardhat";
+
+describe("Lock", function () {
+  // We define a fixture to reuse the same setup in every test.
+  // We use loadFixture to run this setup once, snapshot that state,
+  // and reset Hardhat Network to that snapshot in every test.
+  async function deployOneYearLockFixture() {
+    const ONE_YEAR_IN_SECS = 365 * 24 * 60 * 60;
+    const ONE_GWEI = 1_000_000_000;
+
+    const lockedAmount = ONE_GWEI;
+    const unlockTime = (await time.latest()) + ONE_YEAR_IN_SECS;
+
+    // Contracts are deployed using the first signer/account by default
+    const [owner, otherAccount] = await ethers.getSigners();
+
+    const Lock = await ethers.getContractFactory("Lock");
+    const lock = await Lock.deploy(unlockTime, { value: lockedAmount });
+
+    return { lock, unlockTime, lockedAmount, owner, otherAccount };
+  }
+
+  describe("Deployment", function () {
+    it("Should set the right unlockTime", async function () {
+      const { lock, unlockTime } = await loadFixture(deployOneYearLockFixture);
+
+      expect(await lock.unlockTime()).to.equal(unlockTime);
+    });
+
+    it("Should set the right owner", async function () {
+      const { lock, owner } = await loadFixture(deployOneYearLockFixture);
+
+      expect(await lock.owner()).to.equal(owner.address);
+    });
+
+    it("Should receive and store the funds to lock", async function () {
+      const { lock, lockedAmount } = await loadFixture(
+        deployOneYearLockFixture
+      );
+
+      expect(await ethers.provider.getBalance(lock.target)).to.equal(
+        lockedAmount
+      );
+    });
+
+    it("Should fail if the unlockTime is not in the future", async function () {
+      // We don't use the fixture here because we want a different deployment
+      const latestTime = await time.latest();
+      const Lock = await ethers.getContractFactory("Lock");
+      await expect(Lock.deploy(latestTime, { value: 1 })).to.be.revertedWith(
+        "Unlock time should be in the future"
+      );
+    });
+  });
+
+  describe("Withdrawals", function () {
+    describe("Validations", function () {
+      it("Should revert with the right error if called too soon", async function () {
+        const { lock } = await loadFixture(deployOneYearLockFixture);
+
+        await expect(lock.withdraw()).to.be.revertedWith(
+          "You can't withdraw yet"
+        );
+      });
+
+      it("Should revert with the right error if called from another account", async function () {
+        const { lock, unlockTime, otherAccount } = await loadFixture(
+          deployOneYearLockFixture
+        );
+
+        // We can increase the time in Hardhat Network
+        await time.increaseTo(unlockTime);
+
+        // We use lock.connect() to send a transaction from another account
+        await expect(lock.connect(otherAccount).withdraw()).to.be.revertedWith(
+          "You aren't the owner"
+        );
+      });
+
+      it("Shouldn't fail if the unlockTime has arrived and the owner calls it", async function () {
+        const { lock, unlockTime } = await loadFixture(
+          deployOneYearLockFixture
+        );
+
+        // Transactions are sent using the first signer by default
+        await time.increaseTo(unlockTime);
+
+        await expect(lock.withdraw()).not.to.be.reverted;
+      });
+    });
+
+    describe("Events", function () {
+      it("Should emit an event on withdrawals", async function () {
+        const { lock, unlockTime, lockedAmount } = await loadFixture(
+          deployOneYearLockFixture
+        );
+
+        await time.increaseTo(unlockTime);
+
+        await expect(lock.withdraw())
+          .to.emit(lock, "Withdrawal")
+          .withArgs(lockedAmount, anyValue); // We accept any value as `when` arg
+      });
+    });
+
+    describe("Transfers", function () {
+      it("Should transfer the funds to the owner", async function () {
+        const { lock, unlockTime, lockedAmount, owner } = await loadFixture(
+          deployOneYearLockFixture
+        );
+
+        await time.increaseTo(unlockTime);
+
+        await expect(lock.withdraw()).to.changeEtherBalances(
+          [owner, lock],
+          [lockedAmount, -lockedAmount]
+        );
+      });
+    });
+  });
+});
+```
+
+So I run the test and...
+
+```plaintext
+  Lock
+    Deployment
+      ✔ Should set the right unlockTime (1211ms)
+      ✔ Should set the right owner
+      ✔ Should receive and store the funds to lock
+      ✔ Should fail if the unlockTime is not in the future
+    Withdrawals
+      Validations
+        ✔ Should revert with the right error if called too soon
+        ✔ Should revert with the right error if called from another account
+        ✔ Shouldn't fail if the unlockTime has arrived and the owner calls it
+      Events
+        ✔ Should emit an event on withdrawals
+      Transfers
+        ✔ Should transfer the funds to the owner
+
+
+  9 passing (1s)
+```
+
+## Conclusion
+
+First things first. Hardhat is awesome. I really like the way it works. Concerning Vyper, I think it is a good language. The syntax is very similar to Python, so it is easy to learn.
+I think it is a good alternative to Solidity, but can't say if it is better or worse. I think it is a matter of taste. I will continue to use it and see how it goes when building more complex contracts.
+
+That's all for now. I hope you enjoyed it. See you in the next article 😊.
