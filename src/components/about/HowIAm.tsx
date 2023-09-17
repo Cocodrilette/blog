@@ -1,7 +1,6 @@
 import Link from "next/link";
 import SocialsButtons from "../commons/socials/SocialButtons";
-import ExternalLink from "../links/ExternalLink";
-import InternalLink from "../links/InternalLink";
+import {BsArrowRightShort} from "react-icons/bs"
 
 export default function HowIAm() {
   return (
@@ -11,31 +10,9 @@ export default function HowIAm() {
       </h2>
       <div className="flex flex-col gap-2">
         <p>
-          A law and computer science student that loves code. Now I&apos;m
-          center in Web 3 development (Solidity mostly) but constantly I&apos;m
-          learning about backend with Node.js (I like{" "}
-          <ExternalLink content="Nest" href="https://docs.nestjs.com/" />
-          ).
+          Blockchain developer
         </p>
-        <p>
-          What about Frontend may you be thinking? Well, that&apos;s my business
-          cause I need everything looks so good. So I learned CSS until I knew{" "}
-          <ExternalLink content="Tailwind" href="https://tailwindcss.com/" />{" "}
-          (when everything changed 🤯). I also love work with{" "}
-          <ExternalLink content="Next.js" href="https://nextjs.org/" /> as many
-          commons problems are solved.
-        </p>
-        <p>
-          In case I have not mentioned it before I&apos;m a blockchain
-          advocated. From learn to teach as I do with our kind community at{" "}
-          <ExternalLink
-            content="dotlabs()"
-            href="https://www.instagram.com/dotlabs__/"
-          />
-          . You are welcome to follow me on my socials below and read the{" "}
-          <InternalLink href="/blog" content="blog" />.
-        </p>
-
+        <Link href="/blog" className="inline-flex items-center underline transition-all gap-1 hover:gap-2 w-fit mt-10 text-xl">Go to posts <BsArrowRightShort/></Link>
         <SocialsButtons />
       </div>
     </div>
