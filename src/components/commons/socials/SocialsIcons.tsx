@@ -1,4 +1,4 @@
-import { BsGithub, BsLinkedin, BsTwitterX } from "react-icons/bs";
+import { BsGithub, BsLinkedin, BsTwitterX, BsGitlab } from "react-icons/bs";
 
 export default function SocialsIcons() {
   return (
@@ -16,6 +16,13 @@ export default function SocialsIcons() {
         rel="noreferrer"
       >
         <BsGithub className="text-slate-100" />
+      </a>
+      <a
+        href="https://gitlab.com/Cocodrilette"
+        target="_blank"
+        rel="noreferrer"
+      >
+        <BsGitlab className="text-slate-100" />
       </a>
       <a
         href="https://www.linkedin.com/in/juan-fernando-cogollo-doria/"
