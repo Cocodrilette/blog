@@ -35,7 +35,7 @@ export default function Blog({ article: { source, frontmatter } }: any) {
           </div>
           <div
             id={styles.postContent}
-            className="flex flex-col gap-5 text-slate-200 mb-20 md:bg-gray-800/70 md:p-10 md:border md:border-dimmedPink"
+            className="flex flex-col gap-5 text-slate-200 mb-20 md:bg-gray-800/70 md:p-10 md:shadow-md md:shadow-gray-900/80"
           >
             <MDXRemote {...source} />
           </div>
