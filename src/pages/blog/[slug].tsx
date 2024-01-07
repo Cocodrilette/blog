@@ -9,9 +9,9 @@ import rehypeAutolinkHeadings from "rehype-autolink-headings";
 
 import { getSlug, getArticleFromSlug } from "@app/lib/mdxProcessor";
 import { Container5xl } from "@app/components/commons/Container5xl";
-import Layout from "@app/components/Layout";
-import PostTitle from "@app/components/blog/PostTitle";
-import TextSmallAndDimmed from "@app/components/text/TextSmallAndDimmed";
+import { Layout } from "@app/components/Layout";
+import { PostTitle } from "@app/components/blog/PostTitle";
+import { TextSmallAndDimmed } from "@app/components/text/TextSmallAndDimmed";
 
 import styles from "@app/styles/Article.module.css";
 

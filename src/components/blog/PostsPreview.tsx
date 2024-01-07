@@ -1,7 +1,7 @@
 import { PostFrontmatter } from "@app/types/lib";
 import { MinimalisticArticleCard } from "./ArticleCardMinimal";
 
-export default function PostsPreview(props: { articles: PostFrontmatter[] }) {
+export function PostsPreview(props: { articles: PostFrontmatter[] }) {
   const articles = props.articles
     .sort((a: any, b: any) => {
       return (

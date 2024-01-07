@@ -1,9 +1,9 @@
-import Layout from "@app/components/Layout";
+import {Layout} from "@app/components/Layout";
 import { PostFrontmatter } from "@app/types/lib";
-import HowIAm from "@app/components/about/HowIAm";
+import { HowIAm } from "@app/components/about/HowIAm";
 import { getArticles } from "@app/lib/mdxProcessor";
 import { Container5xl } from "@app/components/commons/Container5xl";
-import PostsPreview from "@app/components/blog/PostsPreview";
+import { PostsPreview } from "@app/components/blog/PostsPreview";
 
 export default function AboutPage(props: { articles: PostFrontmatter[] }) {
   return (

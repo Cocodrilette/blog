@@ -1,9 +1,9 @@
 import Link from "next/link";
 
-import Tag from "./Tag";
+import { Tag } from "./Tag";
 import { BLOG_BASE_PATH } from "@app/data/constants";
 import { BlogPostProps } from "@app/types/components";
-import TextSmallAndDimmed from "@app/components/text/TextSmallAndDimmed";
+import { TextSmallAndDimmed } from "@app/components/text/TextSmallAndDimmed";
 
 export default function ArticleCard({
   description,

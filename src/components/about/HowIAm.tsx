@@ -4,7 +4,7 @@ const fira_code = Fira_Code({
   subsets: ["greek"],
 });
 
-export default function HowIAm(props: any) {
+export function HowIAm() {
   return (
     <div className={`${fira_code.className} my-10`}>
       <h1 className={`text-3xl md:text-4xl`}>/cocodrilette</h1>

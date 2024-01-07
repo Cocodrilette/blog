@@ -1,4 +1,4 @@
-import Layout from "@app/components/Layout";
+import {Layout} from "@app/components/Layout";
 import PageTitle from "@app/components/text/MainPageTitle";
 import { Container5xl } from "@app/components/commons/Container5xl";
 import { getAllArticles } from "@app/lib/mdxProcessor";

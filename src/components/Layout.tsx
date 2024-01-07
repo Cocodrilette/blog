@@ -12,7 +12,7 @@ const quicksand = Quicksand({
   variable: "--quicksand-font",
 });
 
-export default function Layout({
+export function Layout({
   headTitle,
   headDescription,
   children,
