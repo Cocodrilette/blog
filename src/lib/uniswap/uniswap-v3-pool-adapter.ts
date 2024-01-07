@@ -26,8 +26,10 @@ export async function getUWattPrice(): Promise<any> {
 
   return {
     pair: poolInfo.pair,
-    price: parseFloat(ethers.formatUnits(uWattPrice, 18)).toFixed(4),
-    priceRaw: uWattPrice.toString(),
+    price: parseFloat(
+      parseFloat(ethers.formatUnits(uWattPrice, 18)).toFixed(4)
+    ),
+    priceRaw: Number(uWattPrice / BigInt(1e12)),
     provider: "Uniswap V3 Pool",
     poolAddress: poolInfo.address,
   };
