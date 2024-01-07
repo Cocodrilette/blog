@@ -1,8 +1,8 @@
-import Layout from '@app/components/Layout';
-import PageTitle from '@app/components/text/MainPageTitle';
-import Container5xl from '@app/components/commons/Container5xl';
-import { getAllArticles } from '@app/lib/mdxProcessor';
-import ArticleCard from '@app/components/blog/ArticleCard';
+import Layout from "@app/components/Layout";
+import PageTitle from "@app/components/text/MainPageTitle";
+import { Container5xl } from "@app/components/commons/Container5xl";
+import { getAllArticles } from "@app/lib/mdxProcessor";
+import ArticleCard from "@app/components/blog/ArticleCard";
 
 export default function PostsPages(props: any) {
   const articles = props.allArticles
@@ -27,12 +27,12 @@ export default function PostsPages(props: any) {
 
   return (
     <Layout
-      headTitle='Cocodrilette - Blog'
-      headDescription='Cocodrilette blog posts.'
+      headTitle="Cocodrilette - Blog"
+      headDescription="Cocodrilette blog posts."
     >
       <Container5xl>
-        <PageTitle content='Blog' />
-        <div className='flex flex-col mt-10 mb-20 gap-5'>{articles}</div>
+        <PageTitle content="Blog" />
+        <div className="flex flex-col mt-10 mb-20 gap-5">{articles}</div>
       </Container5xl>
     </Layout>
   );
@@ -40,8 +40,5 @@ export default function PostsPages(props: any) {
 
 export async function getStaticProps() {
   const articles = await getAllArticles();
-
-  articles.map((article) => article.data);
-
   return { props: { allArticles: articles } };
 }

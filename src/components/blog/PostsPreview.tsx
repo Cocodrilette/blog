@@ -10,9 +10,8 @@ export default function PostsPreview(props: { articles: PostFrontmatter[] }) {
     })
     .map((postData: any, index: number) => {
       return (
-        <div className="flex flex-col gap-10">
+        <div key={index} className="flex flex-col gap-10">
           <MinimalisticArticleCard
-            key={index}
             slug={postData.slug}
             title={postData.title}
             description={postData.description}

@@ -1,7 +1,6 @@
 import HeaderLink from "@app/components/links/HeaderLink";
 import { NavOptions } from "@app/types/components";
 import SocialsIcons from "./socials/SocialsIcons";
-import Container5xl from "./Container5xl";
 
 export default function Nav() {
   return (
