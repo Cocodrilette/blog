@@ -17,7 +17,7 @@ export function MinimalisticArticleCard(props: {
         <div className="">
           <Link
             href={BLOG_BASE_PATH + props.slug}
-            className="flex items-center gap-2 hover:underline hover:text-blue-400 visited:text-purple-400"
+            className="flex items-center gap-2 hover:underline hover:text-dimmedPink transition-all duration-500"
           >
             <h2 className="tracking-tight block mt-1 text-xl leading-tight font-medium">
               {props.title}
