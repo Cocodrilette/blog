@@ -7,5 +7,6 @@ export interface PostFrontmatter {
   description: string;
   publishedAt: string;
   tags: string[];
+  slug: string;
   readingTime: string;
 }

@@ -1,6 +1,5 @@
-import "highlight.js/styles/atom-one-dark-reasonable.css";
+import "highlight.js/styles/night-owl.css";
 import dayjs from "dayjs";
-import Image from "next/image";
 import rehypeSlug from "rehype-slug";
 import { MDXRemote } from "next-mdx-remote";
 import rehypeHighlight from "rehype-highlight";
@@ -9,7 +8,7 @@ import { serialize } from "next-mdx-remote/serialize";
 import rehypeAutolinkHeadings from "rehype-autolink-headings";
 
 import { getSlug, getArticleFromSlug } from "@app/lib/mdxProcessor";
-import Container5xl from "@app/components/commons/Container5xl";
+import { Container5xl } from "@app/components/commons/Container5xl";
 import Layout from "@app/components/Layout";
 import PostTitle from "@app/components/blog/PostTitle";
 import TextSmallAndDimmed from "@app/components/text/TextSmallAndDimmed";

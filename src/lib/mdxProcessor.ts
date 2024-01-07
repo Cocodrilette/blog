@@ -3,7 +3,7 @@ import fs from "fs";
 import matter from "gray-matter";
 import readingTime from "reading-time";
 import { sync } from "glob";
-import { ArticleData } from "../types/lib/index";
+import { ArticleData, PostFrontmatter } from "../types/lib/index";
 
 const articlesPath = path.join(process.cwd(), "src/data/articles");
 
@@ -40,25 +40,39 @@ export async function getArticleFromSlug(slug: any) {
 
 export async function getAllArticles() {
   const articles = fs.readdirSync(articlesPath);
+  const allArticles: PostFrontmatter[] = parseArticlesFiles(articles);
 
-  const allArticles: ArticleData[] = articles.reduce(
-    (acc: ArticleData[], articleSlug: string) => {
+  return allArticles;
+}
+
+export async function getArticles(amount: number = 5) {
+  const articles = fs.readdirSync(articlesPath);
+  const allArticles: PostFrontmatter[] = parseArticlesFiles(articles);
+
+  return allArticles.slice(0, amount);
+}
+
+export function parseArticlesFiles(articles: string[]): PostFrontmatter[] {
+  const parsedArticles = articles.reduce(
+    (acc: any, articlePathName: string) => {
+      const slug = articlePathName.replace(".mdx", "");
       const source = fs.readFileSync(
-        path.join(articlesPath, articleSlug),
+        path.join(articlesPath, articlePathName),
         "utf8"
       );
       const { data } = matter(source);
 
-      const article = {
-        ...data,
-        slug: articleSlug.replace(".mdx", ""),
-        readingTime: readingTime(source).text,
-      };
-
-      return [article, ...acc];
+      return [
+        {
+          ...data,
+          slug,
+          readingTime: readingTime(source).text,
+        },
+        ...acc,
+      ];
     },
     []
   );
 
-  return allArticles;
+  return parsedArticles;
 }
