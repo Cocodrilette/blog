@@ -1,4 +1,4 @@
-import { BsTwitter, BsGithub, BsLinkedin } from "react-icons/bs";
+import { BsGithub, BsLinkedin, BsTwitterX } from "react-icons/bs";
 
 export default function SocialsIcons() {
   return (
@@ -8,7 +8,7 @@ export default function SocialsIcons() {
         target="_blank"
         rel="noreferrer"
       >
-        <BsTwitter className="text-slate-100" />
+        <BsTwitterX className="text-slate-100" />
       </a>
       <a
         href="https://github.com/Cocodrilette"
