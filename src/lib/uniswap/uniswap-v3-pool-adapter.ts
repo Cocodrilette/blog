@@ -19,17 +19,18 @@ export async function getUWattPrice(): Promise<any> {
   const sqrtPriceX96 = BigInt(slot0[0]);
   const sqrtPrice = sqrtPriceX96 / BigInt(2 ** 96);
   const price = sqrtPrice ** BigInt(2);
-  const abjPrice = (price * BigInt(1e18)) / BigInt(10 ** 12);
-
-  const usdtPrice = (BigInt(1e6) * abjPrice) / BigInt(1e6); // in uWatt
-  const uWattPrice = BigInt(1e36) / usdtPrice; // in USDT
+  // This value `usdtPriceInUWatt`  indicates how many of token 1 you need to buy 1 of token 0
+  // 10 ** 12 = 10**18 / 10**6 which is the decimal difference between the two tokens
+  const rawUSDTPriceInUWatt = (price * BigInt(10 ** 18)) / BigInt(10 ** 12); // 18 decimals
+  const rawUWattPriceInUSDT =
+    BigInt(10 ** 36) / rawUSDTPriceInUWatt / BigInt(10 ** 12); // 6 decimals
+  const floatUWattPriceInUSDT =
+    Number(rawUWattPriceInUSDT) / Number(BigInt(10 ** 6));
 
   return {
     pair: poolInfo.pair,
-    price: parseFloat(
-      parseFloat(ethers.formatUnits(uWattPrice, 18)).toFixed(4)
-    ),
-    priceRaw: Number(uWattPrice / BigInt(1e12)),
+    price: floatUWattPriceInUSDT,
+    priceRaw: rawUWattPriceInUSDT.toString(),
     provider: "Uniswap V3 Pool",
     poolAddress: poolInfo.address,
   };
