@@ -1,5 +1,7 @@
 import { PostFrontmatter } from "@app/types/lib";
 import { MinimalisticArticleCard } from "./ArticleCardMinimal";
+import { MdKeyboardArrowDown } from "react-icons/md";
+import Link from "next/link";
 
 export function PostsPreview(props: { articles: PostFrontmatter[] }) {
   const articles = props.articles
@@ -22,11 +24,15 @@ export function PostsPreview(props: { articles: PostFrontmatter[] }) {
     });
 
   return (
-    <div className="flex flex-col mb-20 gap-5">
-      <div>
-        <h2 className="text-2xl font-bold">Latests Posts</h2>
-      </div>
-      {articles}
+    <div className="flex flex-col mb-20 gap-10">
+      <section className="flex flex-col gap-5">{articles}</section>
+      <Link
+        href="/blog"
+        className="flex items-center justify-center border shadow-lg
+        backdrop-blur-xl p-3 text-dimmedPink text-2xl"
+      >
+        <MdKeyboardArrowDown />
+      </Link>
     </div>
   );
 }

@@ -10,7 +10,6 @@ export function HowIAm() {
       <h1 className={`text-3xl md:text-4xl`}>
         <span className="text-dimmedPink">/</span>cocodrilette
       </h1>
-      <p className="text-sm md:text-base">Solidity focused blockchain dev.</p>
     </div>
   );
 }
